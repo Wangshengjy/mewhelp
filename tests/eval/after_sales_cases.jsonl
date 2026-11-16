@@ -1,0 +1,4 @@
+{"description":"订单 12345 的鞋开胶了，希望退款，最好退回原支付方式。","expected":{"order_number":"12345","request_type":"refund","expected_solution":"退回原支付方式"}}
+{"description":"耳机麦克风坏了，我想换一副新的。","expected":{"order_number":null,"request_type":"exchange","expected_solution":"换新"}}
+{"description":"订单 98765 发货了吗？","expected":{"order_number":"98765","request_type":"logistics_query","expected_solution":null}}
+{"description":"商品有明显划痕，我该怎么办？","expected":{"order_number":null,"request_type":"quality_issue","expected_solution":null}}

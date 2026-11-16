@@ -1,0 +1,5 @@
+{"message":"订单 1001 的物流到哪了？","tool":"query_logistics","args":{"order_id":"1001"}}
+{"message":"退货政策是什么？","tool":"query_faq","args":{"keyword":"退货"}}
+{"message":"邮费是多少？","tool":"query_faq","args":{"keyword":"邮费"}}
+{"message":"帮我查一下商品 P-1001 的信息。","tool":"query_product","args":{"product_id":"P-1001"}}
+{"message":"我要转人工客服，请帮我创建一个工单。","tool":"create_ticket","args":{"description":"*","ticket_type":"*"}}

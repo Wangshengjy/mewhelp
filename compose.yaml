@@ -1,0 +1,21 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-mewhelp}
+      MYSQL_USER: ${MYSQL_USER:-mewhelp}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-mewhelp}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-mewhelp-root}
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - mewhelp_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  mewhelp_mysql_data:
