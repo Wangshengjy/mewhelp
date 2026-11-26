@@ -1,40 +1,57 @@
 # MewHelp 电商智能客服
 
-基于 LLM Function Calling 的电商智能客服系统：用户用自然语言即可查订单、查物流、查 FAQ、转人工建单。模型每轮**最多调用一个**工具（订单、商品、物流、FAQ、工单五个 LangChain 工具），工具结果写回 MySQL 后，再用未绑定工具的模型逐步流式生成最终答复。
+LangGraph Workflow + Agent 混合架构的电商智能客服系统：混合检索问答、意图分流、工具办事、可观测、数据飞轮与旁路主题分类微调。业务铁律（强制检索、强制取证、转人工）由流程代码守住，开放推理交给模型；全程 TDD。
 
 ## 核心特性
 
-- **Function Calling 工具链**：模型决策 → 参数 Schema 校验（Pydantic）→ 工具执行 → 结果以 `role=tool` 回灌 → 流式收敛，五步闭环让对话直接"办事"
-- **SSE 流式对话协议**：`conversation / token / tool / done` 四类事件帧，回答逐 token 打字机输出，工具执行实时推送状态，前端气泡展示工具调用轨迹徽章
-- **多轮上下文管理**：基于 token 预算的对话裁剪——始终保留 system prompt，问答轮与工具交互轮整存整裁，防止工具申请与结果被拆散导致上下文错乱，同时控制长会话成本
-- **四表持久化**：`faq / conversations / messages / tickets`，以 `tool_call_id` 关联工具申请与结果；工单表唯一键约束保证超时重试**幂等**（同一轮重复触发只建一张工单）
-- **TDD 开发**：pytest 69 个测试全通过（内存 SQLite + 假模型，不依赖网络与 MySQL）
-- **Docker Compose 一键部署**：MySQL 8.4 容器化，服务启动自动建表并幂等写入演示数据
+- **混合检索 + 幻觉治理**：Milvus 2.5 BM25 与向量双路 RRF 融合、bge-reranker 精排；自建 300 题五桶评估集实测 MRR@5 0.735（纯向量 0.711、纯 BM25 0.610）；生成前四信号置信度闸，阈值经 300 题校准（拦 86.7% 库外题、误拦 10%），库外题拒答率 1.000
+- **Workflow + Agent 混合架构**：LangGraph 编排指代消解、意图识别（八类五出口）、置信度校验、Agent 生成与审计；退款子流程缺单号时 interrupt 暂停，前端订单选择器回填后续跑
+- **SSE 流式对话协议**：conversation / token / tool / done / interrupt / error 六类事件帧，逐 token 打字机输出，回答带引用角标可展开出处
+- **工具系统**：ToolSpec 注册中心统一登记内置与 MCP 工具；执行引擎覆盖 Schema 校验回灌、权限门、超时重试、失败分诊与审计；写操作须经前端确认令牌
+- **分层上下文**：最近轮原文、中段压缩、远段滚动摘要三层，额度从模型窗口倒推，37 轮长对话实测不丢早期信息
+- **可观测与数据飞轮**：自部署 Langfuse 零侵入还原调用树、token 按意图分账；知识缺口经检索不足、自评未过、用户点踩三入口落池，标准化查重后按频次审核回填
+- **旁路主题分类**：17 类多标签 RoBERTa-wwm-ext 微调管线，训练 → ONNX 导出（logits 一致性偏差 1.19e-06）→ 推理服务 → 批量归类落表（幂等）；正式规模训练待 GPU，链路已用冒烟权重全量验证
+- **TDD**：pytest 410 个测试全通过（内存 SQLite + 假模型，不依赖网络与 MySQL）
 
 ## 技术栈
 
-Python 3.10+ · FastAPI · LangChain · SQLAlchemy · MySQL 8.4 · SSE · Pydantic · pytest · Docker Compose
+Python 3.10+ · FastAPI · LangChain · LangGraph · Milvus 2.5（BM25+dense 混合）· MCP · Langfuse · MySQL 8.4 · SSE · Pydantic · ONNX Runtime · pytest · Docker Compose
 
 ## 架构
 
 ```
-浏览器 (static/index.html, 原生 fetch 读 SSE)
+浏览器 (static/*.html, 原生 fetch 读 SSE)
    │  POST /api/chat/stream
    ▼
 FastAPI (app/api/chat.py)
    │
-   ├─ ChatService (app/services/chat.py)      ← Function Calling 循环 + 上下文裁剪
-   │     ├─ ToolRegistry (app/tools/)         ← 5 个 @tool 业务工具 + 参数 Schema
-   │     └─ ToolExecutor (app/services/)      ← 超时控制 / 异常归一
+   ├─ LangGraph 主图 (app/graph/)              ← coref → intent → 路由分流
+   │     ├─ 知识线: 强制 RAG → 四信号置信度闸 → 生成（带引用角标）
+   │     ├─ 退款线: fetch_order →(interrupt 选单) retrieve_policy → Agent 判定
+   │     ├─ 投诉线: 强制转人工 + 建工单提议
+   │     └─ 闲聊线: 脚本话术零模型调用
    │
-   ├─ Repositories (app/repositories/)        ← SQLAlchemy 数据访问层
+   ├─ ToolSpec 注册中心 (app/tools/)           ← 内置工具 + MCP 工具统一登记
+   │     └─ 执行引擎六段管道 + 两台 MCP Server (mcp_servers/)
    │
-   └─ MySQL (conversations / messages / faq / tickets)
+   ├─ 分层上下文 (app/core/memory.py)          ← 原文/压缩/滚动摘要，窗口预算倒推
+   │
+   ├─ 检索与评估 (app/kb/, app/eval/)          ← Milvus 混合检索四策略 + 裁判模型
+   │
+   ├─ 数据飞轮 (app/core/flywheel.py)          ← 落池 → 标准化查重 → 审核 → 写回向量化
+   │
+   ├─ 可观测 (app/core/observability.py)       ← Langfuse 回调，token 按意图分账
+   │
+   └─ MySQL (conversations/messages/tickets/kb_chunks/
+             low_confidence_questions/review_queue/
+             faith_cases/eval_runs/topic_classifications)
+       Milvus (知识向量库)
+       分类器服务 :8110 (ONNX, 旁路批量归类)
 ```
 
 ## 快速开始
 
-需要 Python 3.10+ 和 Docker（用于运行 MySQL 8.4）。
+需要 Python 3.10+ 和 Docker。
 
 ```powershell
 cd mewhelp
@@ -43,139 +60,76 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-`.env` 只需在不存在时从模板复制一次；**不要用模板覆盖已有的 `.env`**：
+`.env` 只需在不存在时从模板复制一次；**不要用模板覆盖已有的 `.env`**，**不要把真实密钥提交到仓库**：
 
 ```powershell
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
-编辑 `.env` 填写上游和数据库配置：
+编辑 `.env` 填写上游与数据库配置，最小必填三项 `CHAT_BASE_URL` / `CHAT_MODEL` / `CHAT_API_KEY`（任何 OpenAI 兼容服务均可）。RAG 与飞轮需要 `EMBED_API_KEY`（硅基流动 BGE-M3）与 `RERANK_API_KEY`；可观测需要 `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_HOST` 三项齐全才挂回调，缺失则静默不挂、功能不受影响。
 
-```dotenv
-CHAT_BASE_URL=https://api.openai.com/v1
-CHAT_MODEL=your-model-name
-CHAT_API_KEY=your-api-key
-CHAT_TEMPERATURE=0.2
-CHAT_CONTEXT_TOKEN_BUDGET=6000
-CHAT_TOKEN_SAFETY_MARGIN=500
-MYSQL_HOST=127.0.0.1
-MYSQL_PORT=3306
-MYSQL_DATABASE=mewhelp
-MYSQL_USER=mewhelp
-MYSQL_PASSWORD=mewhelp
-TOOL_TIMEOUT_SECONDS=10
-```
-
-`CHAT_BASE_URL`、`CHAT_MODEL`、`CHAT_API_KEY` 必填，缺失时启动即报错。任何 OpenAI 兼容服务均可（例如 DeepSeek `https://api.deepseek.com`、Ollama `http://localhost:11434/v1/`），要求模型支持流式输出与 function calling。详见 [DeepSeek API](https://api-docs.deepseek.com/api/create-chat-completion) 与 [Ollama OpenAI compatibility](https://docs.ollama.com/api/openai-compatibility)。**不要把真实密钥提交到仓库。**
-
-### 启动 MySQL
+### 启动基础设施（MySQL + Milvus）
 
 ```powershell
-docker compose up -d --wait
+docker compose up -d --wait     # mysql / etcd / minio / milvus 四容器全部 healthy 即就绪
 ```
 
-`docker compose ps` 显示 `healthy` 即就绪。应用启动时用 SQLAlchemy `create_all` 建表并幂等写入演示夹具，重复启动不会重复插入。
-
-### 启动 API
+### 启动主应用
 
 ```powershell
-fastapi dev app/main.py
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --port 8000
 ```
 
-服务默认监听 `http://127.0.0.1:8000`，接口文档在 `/docs`，聊天页在 `/`。
-
-## 使用示例
-
-浏览器打开 `http://127.0.0.1:8000/` 即可聊天；工具调用会在 assistant 气泡顶部显示徽章（工具名 + 运行中/已完成/失败）。
-
-命令行验证 SSE 流（`curl.exe -N` 关闭客户端缓冲）：
+服务监听 `http://127.0.0.1:8000`，接口文档在 `/docs`。**最小可用即以上两步**；以下为可选增强：
 
 ```powershell
-$body = "$env:TEMP\chat.json"
-'{"message":"订单 1001 的物流到哪了"}' | Set-Content -LiteralPath $body -Encoding UTF8
-curl.exe -N -X POST http://127.0.0.1:8000/api/chat/stream `
-  -H "Content-Type: application/json" `
-  --data-binary "@$body"
+# 可选：Langfuse 可观测（调用树、token 分账），界面 http://localhost:3000
+docker compose -f docker-compose.langfuse.yml up -d
+
+# 可选：两台 MCP Server（售后/物流），不跑则 MCP 工具清单为 0、内置工具不受影响
+.\.venv\Scripts\python.exe -m scripts.mcp_up
+
+# 可选：主题分类器服务 :8110（飞轮批量归类用）
+.\.venv\Scripts\python.exe -m scripts.ch10.classifier_ctl start
 ```
 
-命中工具时的事件顺序：
+## 页面一览
 
-```text
-event: conversation
-data: {"conversation_id": "29c8e4ab-..."}
-
-event: tool
-data: {"tool_call_id": "call_00_...", "name": "query_logistics", "status": "running"}
-
-event: tool
-data: {"tool_call_id": "call_00_...", "name": "query_logistics", "status": "completed"}
-
-event: token
-data: {"delta": "订单"}
-
-event: done
-data: [DONE]
-```
-
-把 `conversation_id` 放进下一轮请求即可续用同一会话。未知会话 ID 返回 404、空白消息返回 422、上下文超预算返回 413；上游失败会发送带稳定 `code` 的 `error` 事件（不泄露异常原文与密钥），已写入的消息和工具轨迹保留，服务端不伪造答复。
-
-## 五个演示工具
-
-| 工具 | 用途 | 说明 |
+| 页面 | 地址 | 说明 |
 | --- | --- | --- |
-| `query_order` | 查询订单 | 演示数据，不连接真实订单系统 |
-| `query_product` | 查询商品 | 同上 |
-| `query_logistics` | 查询物流 | 返回承运商、运单号、当前状态与轨迹 |
-| `query_faq` | 查询 FAQ | 参数化 SQL `LIKE`，按关键词匹配问题/答案/分类 |
-| `create_ticket` | 创建人工工单 | 仅在用户明确要求转人工时调用；(会话, tool_call_id) 唯一，超时重试只建一张 |
-| `submit_refund` | 发起退款申请（ch06） | 拦截型：判定可退后转为前端「退款表单」提议，用户确认后走 `POST /api/actions/create-refund` 落库 |
+| 对话页 | `/` | 聊天、工具轨迹徽章、引用角标、订单选择器、工单/退款表单确认 |
+| 知识库 | `/kb` | 四策略检索自测、就地修块、重新向量化 |
+| RAG 评估台 | `/rag-eval` | 四策略对照报告、编造个案台账（跨轮累计+处置）、就地重跑 |
+| 飞轮审核后台 | `/review` | 待审队列、原话+检索快照详情、通过写回/驳回 |
+| 观测与成本 | `/observability` | Langfuse 调用树报表、按意图 token 分账 |
+| 主题分布 | `/topics` | 17 类条形图，下钻类目问题列表 |
 
-所有订单/商品/物流/工单均为虚构演示数据（响应带 `demo: true`）。FAQ 演示数据刻意只含"退货"与"服务"两条——"邮费是多少"必然查不到，用于验证客服在无命中时**如实说明而不是编造**（漏召回样例）。
-
-## 第六章：意图工程与人工接管（ch06）
-
-在 ch05 的 LangGraph 骨架上升级意图与退款链路：
-
-- **意图分类 v2（八类 + 置信度）**：`app/graph/intent.py` 以 Literal 八类硬约束（物流/订单/商品咨询/退款退货/售后/投诉/闲聊/其他）+ 自报置信度；多轮历史注入做指代消歧；异常/越界回退「其他」。模型可用 `INTENT_MODEL` 单独配置（temperature=0、不流式），与对话模型解耦。
-- **指代消解（coref）**：`app/graph/coref.py` 规则先行（已有订单号锚点/无指代词直接透传，省一次调用），其余单次 LLM 改写出 `resolved_query`，失败回退原句——意图与退款检索都吃改写后的问句。
-- **查询扩展**：`expand_queries` 把一条问句改写成 3 条检索友好查询，多路召回后按 `rerank_score` 去重合并。
-- **refund_flow 自动链**：`退款退货` 意图 → `fetch_order`（问句抽单号，缺单号则 `interrupt` 暂停图、前端渲染**订单卡片**供点选）→ `retrieve_policy`（多路检索退款政策出编号证据）→ 带证据 + 订单快照让 Agent 判定：可退走 `submit_refund`（拦截为退款表单提议），不可退引证据说明，证据不足建议转人工。
-- **人工接管闭环**：`POST /api/chat/stream` 新增 `interrupt` 帧（图暂停，本次流结束）；点选订单 → `POST /api/actions/resume`（SSE 续流，帧契约同 chat）；退款表单提交 → `POST /api/actions/create-refund`（reason 固定五类下拉，`tickets.ticket_type=退款`，列为 varchar(64) 无需迁移）。
-- **脚本出口**：闲聊/其他意图零模型调用走 `script_reply` 固定话术（取代 ch05 的 `chitchat_reply` 节点）。
-
-ch06 相关验证：
+## 评估与验收脚本
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest -q --basetemp="$env:TEMP\pytest-ch06"   # 265 个测试
-.\.venv\Scripts\python.exe -m scripts.eval_intent   # 八类标注 + 怪问题（真上游）
-.\.venv\Scripts\python.exe -m scripts.eval_coref    # 指代改写率（真上游）
-.\.venv\Scripts\python.exe -m scripts.eval_expand   # 查询扩展 3 条（真上游）
-.\.venv\Scripts\python.exe -m scripts.eval_ch06     # 四条验收直连图（真上游 + MySQL/Milvus）
-```
+.\.venv\Scripts\python.exe -m pytest -q --basetemp=.pytest-tmp    # 410 个测试
+.\.venv\Scripts\python.exe -m compileall app scripts
 
-## 自动化验证
-
-```powershell
-python -m pytest -q        # 69 个测试（内存 SQLite + 假模型）
-python -m compileall app tests
-```
-
-针对真实上游的两组标注评估单独运行（需要 `.env` 里的 `CHAT_*` 可用）：
-
-```powershell
-python tests/eval/run_after_sales_eval.py
-python tests/eval/run_tool_call_eval.py
+# 真实上游评估（需 .env 可用、MySQL/Milvus 运行中）
+.\.venv\Scripts\python.exe -m scripts.eval_rag            # 300 题 × 4 策略全量评估
+.\.venv\Scripts\python.exe -m scripts.calibrate_confidence # 置信度阈值校准
+.\.venv\Scripts\python.exe -m scripts.judge_check          # 编造台账裁判一致性重放
+.\.venv\Scripts\python.exe -m scripts.e2e_ch11             # 全链路串联两条样例
+.\.venv\Scripts\python.exe -m scripts.flywheel_pipeline    # 飞轮标准化查重批处理
 ```
 
 ## 清理
 
 ```powershell
-docker compose down      # 停止容器，保留数据卷
-docker compose down -v   # 连同演示数据一起删除
+docker compose down                       # 停止基础设施，保留数据卷
+docker compose -f docker-compose.langfuse.yml down   # 停止 Langfuse
+docker compose down -v                    # 连同数据卷一起删除（慎用）
 ```
 
 ## 常见问题
 
-- **3306 被占用**：停掉本机占用 3306 的 MySQL 服务，或把容器映射到其他端口并让应用连过去（`$env:MYSQL_PORT = "3307"`）。
-- **启动即报数据库连接失败**：确认 MySQL 已运行且 `.env` 的 `MYSQL_*` 与容器一致。数据卷一旦用别的凭据初始化过，需要 `docker compose down -v` 后重建。
-- **答复较慢**：单轮耗时取决于上游模型响应速度；工具轮要多一次模型调用。
+- **3306 被占用**：停掉本机 MySQL 服务，或改容器端口映射并让 `.env` 的 `MYSQL_PORT` 跟过去。
+- **启动即报数据库连接失败**：确认 `docker compose ps` 全部 healthy 且 `.env` 与容器凭据一致；凭据变更过需 `docker compose down -v` 重建。
+- **Milvus 未就绪**：Milvus 依赖 etcd/minio，`docker compose up -d --wait` 会等全部 healthy；首次启动较慢属正常。
+- **Langfuse 未连上**：确认三 env 齐全且容器在跑；不齐全时应用会静默跳过回调，主流程不受影响。
+- **答复较慢**：单轮耗时取决于上游模型；知识类问题多一次检索与证据生成调用。
