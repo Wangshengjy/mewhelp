@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MewHelp · 类目问题列表</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; background: #f3f6fc; color: #24304d; }
+    header { padding: 18px 28px; background: #ffffff; border-bottom: 1px solid #e3e9f6; display: flex; align-items: center; gap: 16px; }
+    header h1 { margin: 0; font-size: 18px; }
+    header nav { display: flex; gap: 12px; font-size: 13px; }
+    header nav a { color: #5a6c96; text-decoration: none; }
+    header nav a:hover { color: #3c56c4; }
+    header nav a.active { color: #3c56c4; font-weight: 600; }
+    main { max-width: 1080px; margin: 24px auto; padding: 0 20px; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tabs a { font-size: 13px; color: #40507a; background: #ffffff; border: 1px solid #e3e9f6; border-radius: 999px; padding: 5px 14px; text-decoration: none; }
+    .tabs a:hover { border-color: #3c56c4; }
+    .tabs a.active { background: #3c56c4; color: #ffffff; border-color: #3c56c4; }
+    .tabs a .n { font-weight: 700; margin-left: 4px; }
+    .panel { background: #ffffff; border: 1px solid #e3e9f6; border-radius: 12px; margin-top: 16px; overflow: hidden; }
+    .panel h2 { margin: 0; padding: 12px 16px; font-size: 14px; border-bottom: 1px solid #edf1fa; color: #40507a; }
+    .q-item { padding: 12px 16px; border-bottom: 1px solid #f0f3fb; }
+    .q-item .main-q { font-size: 14px; font-weight: 600; }
+    .q-item .raw-q { font-size: 12px; color: #7787ab; margin-top: 4px; }
+    .q-item .meta { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; color: #7787ab; align-items: center; }
+    .tag { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; background: #e9efff; color: #3c56c4; }
+    .tag.peer { background: #f0f3fb; color: #5a6c96; font-weight: 400; }
+    .badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; }
+    .badge.待审 { background: #fff3d6; color: #9a6b00; }
+    .badge.通过 { background: #dcf5e3; color: #1d7a3c; }
+    .badge.驳回 { background: #fde3e3; color: #a33; }
+    .pager { display: flex; gap: 12px; align-items: center; justify-content: center; padding: 14px; }
+    .pager button { background: #ffffff; border: 1px solid #d5dcf0; border-radius: 10px; padding: 7px 16px; font-size: 13px; cursor: pointer; color: #40507a; }
+    .pager button:disabled { opacity: .5; cursor: default; }
+    .pager .pos { font-size: 13px; color: #7787ab; }
+    .empty { padding: 24px; text-align: center; color: #8b98ba; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>喵喵优选 · 类目问题列表</h1>
+    <nav>
+      <a href="/">对话页</a>
+      <a href="/kb">知识库</a>
+      <a href="/rag-eval">RAG 评估</a>
+      <a href="/observability">观测与成本</a>
+      <a href="/review">审核</a>
+      <a href="/topics">主题分布</a>
+      <a href="/topics/questions" class="active">类目问题</a>
+    </nav>
+  </header>
+  <main>
+    <div class="tabs" id="tabs"></div>
+    <section class="panel">
+      <h2 id="panel-title">加载中…</h2>
+      <div id="list"></div>
+      <div class="pager">
+        <button id="prev">← 上一页</button>
+        <span class="pos" id="pos">–</span>
+        <button id="next">下一页 →</button>
+      </div>
+    </section>
+  </main>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const label = params.get("label") || "退换货";
+    const page = Math.max(1, parseInt(params.get("page") || "1", 10));
+
+    function go(l, p) {
+      location.href = `/topics/questions?label=${encodeURIComponent(l)}&page=${p}`;
+    }
+
+    async function load() {
+      // 顶部类目签按问题量排开（分布接口顺带给出当前类计数）
+      const dist = await (await fetch("/api/topics/distribution")).json();
+      const counts = Object.fromEntries(dist.classes.map(c => [c.label, c.count]));
+      const ordered = [...dist.classes].sort((a, b) => b.count - a.count);
+      const $tabs = document.getElementById("tabs");
+      for (const c of ordered) {
+        const a = document.createElement("a");
+        a.href = `/topics/questions?label=${encodeURIComponent(c.label)}&page=1`;
+        if (c.label === label) a.classList.add("active");
+        a.innerHTML = `${c.label}<span class="n">${c.count}</span>`;
+        $tabs.append(a);
+      }
+
+      const resp = await fetch(`/api/topics/questions?label=${encodeURIComponent(label)}&page=${page}&size=10`);
+      if (resp.status === 400) { document.getElementById("panel-title").textContent = "类目不存在"; return; }
+      const body = await resp.json();
+      document.getElementById("panel-title").textContent =
+        `「${label}」共 ${body.total} 条（多标签问题在每个命中类目下都会出现）`;
+      const $list = document.getElementById("list");
+      $list.replaceChildren();
+      if (!body.items.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "这一类还没有归类到的问题";
+        $list.append(empty);
+      }
+      for (const it of body.items) {
+        const row = document.createElement("div");
+        row.className = "q-item";
+        const main = document.createElement("div");
+        main.className = "main-q";
+        main.textContent = it.text;
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        for (const lb of it.labels) {
+          const t = document.createElement("span");
+          t.className = "tag" + (lb === label ? "" : " peer");
+          t.textContent = lb;
+          meta.append(t);
+        }
+        const src = document.createElement("span");
+        src.textContent = `来源 ${it.source} · 合并 ${it.occurrence_count} 条 · 归类 ${it.classified_at || "–"}`;
+        meta.append(src);
+        const status = document.createElement("span");
+        if (it.review_status) {
+          status.className = `badge ${it.review_status}`;
+          status.textContent = it.review_status;
+        } else {
+          status.textContent = "未进审核";
+        }
+        meta.append(status);
+        row.append(main);
+        if (it.normalized) {
+          const raw = document.createElement("div");
+          raw.className = "raw-q";
+          raw.textContent = `用户原话：${it.raw_question}`;
+          row.append(raw);
+        } else {
+          const raw = document.createElement("div");
+          raw.className = "raw-q";
+          raw.textContent = "（未归并 · 显示原话）";
+          row.append(raw);
+        }
+        row.append(meta);
+        $list.append(row);
+      }
+      document.getElementById("pos").textContent = `第 ${body.page} / ${body.pages} 页`;
+      document.getElementById("prev").disabled = body.page <= 1;
+      document.getElementById("next").disabled = body.page >= body.pages;
+      document.getElementById("prev").onclick = () => go(label, body.page - 1);
+      document.getElementById("next").onclick = () => go(label, body.page + 1);
+    }
+    load();
+  </script>
+</body>
+</html>

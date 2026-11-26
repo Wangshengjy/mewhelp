@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MewHelp · ch09 观测与成本</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; background: #f3f6fc; color: #24304d; }
+    header { padding: 18px 28px; background: #fff; border-bottom: 1px solid #e3e9f6; display: flex; align-items: center; gap: 16px; }
+    header h1 { margin: 0; font-size: 18px; }
+    header nav { display: flex; gap: 12px; font-size: 13px; }
+    header nav a { color: #5a6c96; text-decoration: none; }
+    header nav a:hover { color: #3c56c4; }
+    main { max-width: 1080px; margin: 24px auto; padding: 0 20px; display: grid; gap: 18px; }
+    .panel { background: #fff; border: 1px solid #e3e9f6; border-radius: 12px; overflow: hidden; }
+    .panel h2 { margin: 0; padding: 12px 16px; font-size: 14px; border-bottom: 1px solid #edf1fa; color: #40507a; display: flex; justify-content: space-between; align-items: center; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 8px 16px; text-align: left; border-bottom: 1px solid #f0f3fb; }
+    th { color: #7787ab; font-weight: 500; font-size: 12px; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .jobs { padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .jobs button { background: #eef2ff; color: #3c56c4; border: 1px solid #c7d3f5; border-radius: 10px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
+    .jobs button:hover { background: #e0e8ff; }
+    .jobs button:disabled { opacity: .5; cursor: default; }
+    .job-state { font-size: 12px; color: #7787ab; max-width: 100%; white-space: pre-wrap; }
+    .empty { padding: 18px 16px; color: #8b98ba; font-size: 13px; }
+    .delta-up { color: #1d7a3c; } .delta-down { color: #a33; }
+    #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #2c3860; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13px; opacity: 0; transition: opacity .25s; pointer-events: none; }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>MewHelp · 观测与成本</h1>
+    <nav>
+      <a href="/">对话页</a>
+      <a href="/kb">知识库</a>
+      <a href="/rag-eval">RAG 评估</a>
+      <a href="/observability">观测与成本</a>
+      <a href="/review">审核</a>
+    </nav>
+    <span id="lf" style="margin-left:auto;font-size:12px;color:#8b98ba;"></span>
+  </header>
+  <main>
+    <section class="panel">
+      <h2>报表 1 · 知识缺口 TopN（review_queue，出现次数=补库优先级）</h2>
+      <div id="gaps"><div class="empty">加载中…</div></div>
+    </section>
+    <section class="panel">
+      <h2>报表 2 · 反馈与拒答统计（low_confidence_questions 按 source）</h2>
+      <div id="refusals"><div class="empty">加载中…</div></div>
+    </section>
+    <section class="panel">
+      <h2>报表 3 · Langfuse 成本 · 按意图 token 账</h2>
+      <div id="cost"><div class="empty">加载中…</div></div>
+    </section>
+    <section class="panel">
+      <h2>评估两轮趋势（eval_runs）</h2>
+      <div id="trend"><div class="empty">加载中…</div></div>
+    </section>
+    <section class="panel">
+      <h2>报表作业（白名单重跑）</h2>
+      <div class="jobs" id="jobs">
+        <button data-job="flywheel_pipeline">跑飞轮流水线</button>
+        <button data-job="calibrate_confidence">重跑阈值校准</button>
+        <button data-job="cost_by_intent">重算意图成本</button>
+        <span class="job-state" id="job-state">选择作业后点按钮；日志尾在此轮询刷新。</span>
+      </div>
+    </section>
+  </main>
+  <div id="toast"></div>
+  <script>
+    function toast(text) {
+      const el = document.getElementById("toast");
+      el.textContent = text; el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 2400);
+    }
+    function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+    async function loadOverview() {
+      const resp = await fetch("/api/observability/overview");
+      const d = await resp.json();
+      document.getElementById("lf").textContent = d.langfuse_enabled ? "Langfuse 已接入" : "Langfuse 未接入（降级运行）";
+      renderGaps(d.gap_top);
+      renderRefusals(d.refusal_stats);
+      renderCost(d.cost_report);
+      renderTrend();
+    }
+
+    function renderGaps(block) {
+      const host = document.getElementById("gaps");
+      if (!block || !block.items?.length) { host.innerHTML = '<div class="empty">暂无待审缺口</div>'; return; }
+      host.innerHTML = `<table><thead><tr><th>#</th><th>标准化问题</th><th class="num">出现次数</th></tr></thead><tbody>` +
+        block.items.map((it, i) => `<tr><td>${i + 1}</td><td>${esc(it.normalized_question)}</td><td class="num">${it.occurrence_count}</td></tr>`).join("") +
+        `</tbody></table>`;
+    }
+
+    function renderRefusals(block) {
+      const host = document.getElementById("refusals");
+      if (!block) { host.innerHTML = '<div class="empty">暂无数据</div>'; return; }
+      const counts = block.counts || {};
+      const rows = Object.entries(counts).map(([k, v]) =>
+        `<tr><td>${esc(k)}</td><td class="num">${v}</td></tr>`).join("");
+      host.innerHTML = `<table><thead><tr><th>落池来源</th><th class="num">条数</th></tr></thead><tbody>${rows}
+        <tr><th>合计</th><th class="num">${block.total ?? 0}</th></tr></tbody></table>
+        <div style="padding:10px 16px;font-size:12px;color:#7787ab;">最近样本：${(block.recent || []).slice(0, 5).map((r) => esc(r.raw_question)).join(" / ") || "—"}</div>`;
+    }
+
+    function renderCost(report) {
+      const host = document.getElementById("cost");
+      if (!report) { host.innerHTML = '<div class="empty">尚无 cost_by_intent 产物 · 点下方「重算意图成本」（需 Langfuse 起栈且有流量）</div>'; return; }
+      const per = report.per_intent || {};
+      const rows = Object.entries(per).map(([intent, b]) =>
+        `<tr><td>${esc(intent)}</td><td class="num">${b.traces}</td><td class="num">${b.input_tokens}</td><td class="num">${b.output_tokens}</td><td class="num">${b.total_tokens}</td></tr>`).join("");
+      const g = report.grand_total || {};
+      host.innerHTML = `<table><thead><tr><th>意图</th><th class="num">traces</th><th class="num">input</th><th class="num">output</th><th class="num">total</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="5" class="empty">无 trace 数据</td></tr>'}
+        <tr><th>合计</th><th class="num">${g.traces ?? 0}</th><th class="num">${g.input_tokens ?? 0}</th><th class="num">${g.output_tokens ?? 0}</th><th class="num">${g.total_tokens ?? 0}</th></tr>
+        </tbody></table>`;
+    }
+
+    async function renderTrend() {
+      const host = document.getElementById("trend");
+      try {
+        const resp = await fetch("/api/observability/jobs-data/eval_trend");
+        if (!resp.ok) { host.innerHTML = '<div class="empty">暂无评估趋势产物</div>'; return; }
+        const d = await resp.json();
+        const runs = d.runs || [];
+        if (runs.length < 2) { host.innerHTML = '<div class="empty">不足两轮,先跑评估流水线</div>'; return; }
+        const rows = runs.map((r) => {
+          const m = r.metrics || {};
+          return `<tr><td>轮 ${r.id}</td><td class="num">${m.recall_at_5 ?? "—"}</td><td class="num">${m.mrr_at_5 ?? "—"}</td><td class="num">${m.faithfulness ?? "沿用上轮"}</td><td class="num">${m.refusal_rate ?? "—"}</td></tr>`;
+        }).join("");
+        const t = d.trend?.deltas || {};
+        const fmt = (x) => x === null || x === undefined ? "—" : x;
+        host.innerHTML = `<table><thead><tr><th>轮次</th><th class="num">Recall@5</th><th class="num">MRR@5</th><th class="num">Faithfulness</th><th class="num">拒答率</th></tr></thead><tbody>${rows}</tbody></table>
+          <div style="padding:10px 16px;font-size:12px;color:#7787ab;">趋势：Recall ${fmt(t.recall_at_5?.first)}→${fmt(t.recall_at_5?.second)} · MRR ${fmt(t.mrr_at_5?.first)}→${fmt(t.mrr_at_5?.second)} · 拒答率 ${fmt(t.refusal_rate?.first)}→${fmt(t.refusal_rate?.second)}</div>`;
+      } catch { host.innerHTML = '<div class="empty">趋势产物读取失败</div>'; }
+    }
+
+    let pollTimer = null;
+    async function runJob(name) {
+      const state = document.getElementById("job-state");
+      document.querySelectorAll("#jobs button").forEach((b) => (b.disabled = true));
+      try {
+        const resp = await fetch(`/api/observability/jobs/${name}/run`, { method: "POST" });
+        const payload = await resp.json();
+        if (!resp.ok) { toast(payload.detail || "作业启动失败"); return; }
+        toast("作业已启动");
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(async () => {
+          const s = await fetch(`/api/observability/jobs/${name}`).then((r) => r.json());
+          state.textContent = (s.running ? "运行中…\n" : "已完成\n") + (s.log_tail || "").slice(-1200);
+          if (!s.running) {
+            clearInterval(pollTimer);
+            document.querySelectorAll("#jobs button").forEach((b) => (b.disabled = false));
+            loadOverview();
+          }
+        }, 3000);
+      } catch { toast("作业启动失败"); document.querySelectorAll("#jobs button").forEach((b) => (b.disabled = false)); }
+    }
+
+    document.getElementById("jobs").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-job]");
+      if (btn) runJob(btn.dataset.job);
+    });
+
+    loadOverview();
+  </script>
+</body>
+</html>

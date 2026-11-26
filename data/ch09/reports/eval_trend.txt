@@ -1,0 +1,22 @@
+ch09 · 自动化评估流水线 · 两轮趋势
+
+轮 3 | 手动 | n=300 | 2026-11-25T15:40:26
+    note             ch04 基线(生成段裁判口径),导入自 rag_eval.json
+    mrr_at_5         0.7349
+    recall_at_5      0.8542
+    faithfulness     0.9918
+    refusal_rate     1.0
+
+轮 4 | 手动 | n=300 | 2026-11-25T15:41:59
+    note             ch09 新跑:检索段 hybrid_rerank,拒答=evidence_confidence<0.138(置信度闸)
+    mrr_at_5         0.7349
+    recall_at_5      0.8542
+    faithfulness     None
+    refusal_rate     0.8667
+    refusal_threshold 0.138
+
+趋势对比(轮 N-1 → 轮 N):
+    recall_at_5      0.8542 → 0.8542  (Δ 0.0)
+    mrr_at_5         0.7349 → 0.7349  (Δ 0.0)
+    faithfulness     0.9918 → None  (Δ None)
+    refusal_rate     1.0 → 0.8667  (Δ -0.1333)

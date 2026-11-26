@@ -1,70 +1,107 @@
-"""The POST /api/chat/stream Server-Sent Events route."""
+"""ch05/ch06 · POST /api/chat/stream:把 LangGraph runtime 事件流渲染成 SSE。
 
-from collections.abc import AsyncIterator, Callable
+帧契约保留 ch04:conversation / tool / token / citations / done([DONE]) / error,
+ch05 新增 actions(转人工/建工单提议),ch06 新增 interrupt(选单卡片,图暂停)。
+FastAPI 0.142 的 EventSourceResponse 特判要求路由本身是 async generator,因此
+404/DB 错误经 Depends(prepare_chat) 在开流前抛出,保持「错误路径不吐半个 SSE 帧」。
+"""
+
+import logging
+from collections.abc import AsyncIterator
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.sse import EventSourceResponse, ServerSentEvent
-from langchain_core.language_models import BaseChatModel
-from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 
-from app.chat import PromptBudgetExceeded
-from app.dependencies import get_chat_model, get_session_factory, get_settings
+from app.graph import runtime
 from app.schemas import ChatRequest
-from app.services.chat import ChatEvent, PreparedTurn, UnknownConversation, prepare_turn, stream_turn
-from app.settings import Settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# 帧契约常量(与 ch04 完全一致,前端零改动即可继续工作)
+UPSTREAM_ERROR_CODE = "upstream_stream_error"
+UPSTREAM_ERROR_MESSAGE = "客服服务暂时不可用，请稍后重试。"
+PERSISTENCE_ERROR_CODE = "persistence_error"
+PERSISTENCE_ERROR_MESSAGE = "会话记录保存失败，请稍后重试。"
 
-def prepare_chat(
-    request: ChatRequest,
-    settings: Annotated[Settings, Depends(get_settings)],
-    session_factory: Annotated[Callable[[], Session], Depends(get_session_factory)],
-) -> PreparedTurn:
-    """Validate the session and prepare the turn before any SSE bytes are sent."""
+
+async def prepare_chat(request: ChatRequest) -> tuple[str, bool]:
+    """Validate the session and persist the user message before any SSE bytes are sent."""
     try:
-        return prepare_turn(
-            session_factory,
-            conversation_id=request.conversation_id,
-            message=request.message,
-            token_budget=settings.chat_context_token_budget,
-            safety_margin=settings.chat_token_safety_margin,
-        )
-    except UnknownConversation as exc:
+        return await runtime.prepare_turn(request.conversation_id, request.message)
+    except runtime.ConversationNotFound as exc:
         raise HTTPException(status_code=404, detail="Unknown conversation_id") from exc
-    except PromptBudgetExceeded as exc:
-        raise HTTPException(
-            status_code=413,
-            detail="The message exceeds the configured context budget",
-        ) from exc
+    except SQLAlchemyError as exc:
+        logger.error("chat prepare persistence failed (%s)", type(exc).__name__)
+        raise HTTPException(status_code=503, detail=PERSISTENCE_ERROR_MESSAGE) from exc
 
 
 @router.post("/api/chat/stream", response_class=EventSourceResponse)
 async def stream_chat(
-    prepared: Annotated[PreparedTurn, Depends(prepare_chat)],
-    model: Annotated[BaseChatModel, Depends(get_chat_model)],
-    session_factory: Annotated[Callable[[], Session], Depends(get_session_factory)],
-    settings: Annotated[Settings, Depends(get_settings)],
+    prepared: Annotated[tuple[str, bool], Depends(prepare_chat)],
+    request: ChatRequest,
 ) -> AsyncIterator[ServerSentEvent]:
-    """Stream one tool-aware conversation turn."""
-    if prepared.created:
+    """Stream one graph-driven conversation turn as SSE frames."""
+    conversation_id, created = prepared
+    if created:
         yield ServerSentEvent(
             event="conversation",
-            data={"conversation_id": prepared.conversation_id},
+            data={"conversation_id": conversation_id},
         )
-    async for event in stream_turn(
-        model=model,
-        session_factory=session_factory,
-        conversation_id=prepared.conversation_id,
-        prompt_messages=prepared.prompt_messages,
-        tool_timeout_seconds=settings.tool_timeout_seconds,
-    ):
-        yield _to_sse(event)
+    try:
+        async for event in runtime.stream_turn(conversation_id, request.message):
+            yield _to_sse(event)
+    except SQLAlchemyError:
+        logger.exception("chat stream persistence failed")
+        yield ServerSentEvent(
+            event="error",
+            data={"code": PERSISTENCE_ERROR_CODE, "message": PERSISTENCE_ERROR_MESSAGE},
+        )
+    except Exception as exc:
+        # 上游挂了只给句式化提示:原始异常文本可能带 key/内网信息,绝不透传
+        logger.error("chat stream failed (%s)", type(exc).__name__)
+        yield ServerSentEvent(
+            event="error",
+            data={"code": UPSTREAM_ERROR_CODE, "message": UPSTREAM_ERROR_MESSAGE},
+        )
 
 
-def _to_sse(event: ChatEvent) -> ServerSentEvent:
-    """Render one domain event as an SSE frame."""
-    if event.raw_data is not None:
-        return ServerSentEvent(event=event.event, raw_data=event.raw_data)
-    return ServerSentEvent(event=event.event, data=event.data)
+def _to_sse(event: dict) -> ServerSentEvent:
+    """Render one runtime event as an SSE frame(ch04 帧名/形状 + actions)。"""
+    kind = event["type"]
+    if kind == "delta":
+        return ServerSentEvent(event="token", data={"delta": event["text"]})
+    if kind == "tool":
+        return ServerSentEvent(
+            event="tool",
+            data={
+                "tool_call_id": event["tool_call_id"],
+                "name": event["name"],
+                "status": event["status"],
+            },
+        )
+    if kind == "citations":
+        return ServerSentEvent(
+            event="citations",
+            data={"conversation_id": event.get("conversation_id"), "items": event["items"]},
+        )
+    if kind == "actions":
+        return ServerSentEvent(event="actions", data={"items": event["items"]})
+    if kind == "interrupt":
+        # ch06/ch08:图暂停等人工输入。本次流到此为止(后面不会再有帧,
+        # 前端凭 payload.type 渲染:select_order 选单卡 / confirm_ticket 工单确认卡)
+        payload = event.get("payload") or {}
+        return ServerSentEvent(
+            event="interrupt",
+            data={
+                "kind": payload.get("type"),
+                "orders": payload.get("orders") or [],
+                "preview": payload.get("preview") or {},
+            },
+        )
+    if kind == "done":
+        return ServerSentEvent(event="done", raw_data="[DONE]")
+    raise ValueError(f"unknown runtime event type: {kind}")

@@ -1,0 +1,35 @@
+"""ch08 · promotions 演示工具草稿(验收 1「新工具注册即用」用)。
+
+用法(注册即定义,核心代码零改动):
+    copy scripts\\demo_ch08_promotions.py.txt app\\tools\\builtin\\promotions.py
+    重启服务(lifespan scan_builtin 扫描导入即注册);
+    进程内演示(eval_ch08 验收1)可直接 importlib 导入该模块,连重启都不用。
+删除文件即下线(下次启动不再注册)。
+"""
+
+import random
+
+from langchain_core.tools import tool
+from pydantic import BaseModel, Field
+
+from app.tools import registry
+
+
+class PromotionInput(BaseModel):
+    keyword: str = Field(min_length=1, max_length=64, description="促销活动关键词,如 猫粮 / 满199减30")
+
+
+@tool(args_schema=PromotionInput)
+def query_promotion(keyword: str) -> dict:
+    """查询当前正在进行的促销活动(满减/折扣/买赠)。凡是用户提到优惠、促销、活动、折扣,
+    都必须调用本工具查询,不要凭记忆回答。"""
+    rng = random.Random(f"promo:{keyword}")  # 种子固定 → 同关键词稳定
+    return {
+        "keyword": keyword,
+        "activity": rng.choice(["满199减30", "第二件半价", "买赠试用装"]),
+        "deadline": "2026-08-31 23:59:59",
+        "internal_rule_id": f"PROMO-{rng.randint(100, 999)}",  # 内部规则号,回答用不上(演示我们侧格式化可剔)
+    }
+
+
+registry.register(registry.spec_from_langchain_tool(query_promotion, source="builtin"))

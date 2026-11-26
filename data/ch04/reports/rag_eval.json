@@ -1,0 +1,1037 @@
+{
+ "meta": {
+  "questions": 300,
+  "strategies": [
+   "vector",
+   "bm25",
+   "hybrid",
+   "hybrid_rerank"
+  ],
+  "k": 5,
+  "embed_model": "BAAI/bge-m3",
+  "rerank_model": "BAAI/bge-reranker-v2-m3",
+  "chat_model": "deepseek-flash",
+  "judge_model": "THUDM/GLM-4-9B-0414",
+  "generated_at": "2026-11-25T07:08:29.800152+00:00",
+  "duration_seconds": 1331.1
+ },
+ "retrieval": {
+  "vector": {
+   "count": 240,
+   "errors": 0,
+   "buckets": {
+    "A_policy": {
+     "mrr": 0.7805555555555556,
+     "recall": 0.8166666666666667,
+     "count": 60
+    },
+    "B_model": {
+     "mrr": 0.923611111111111,
+     "recall": 1.0,
+     "count": 60
+    },
+    "C_colloquial": {
+     "mrr": 0.8680555555555556,
+     "recall": 0.95,
+     "count": 60
+    },
+    "E_multi": {
+     "mrr": 0.27027777777777773,
+     "recall": 0.7,
+     "count": 60
+    }
+   },
+   "mrr": 0.7106250000000001,
+   "recall": 0.8666666666666667
+  },
+  "bm25": {
+   "count": 240,
+   "errors": 0,
+   "buckets": {
+    "A_policy": {
+     "mrr": 0.7472222222222222,
+     "recall": 0.8166666666666667,
+     "count": 60
+    },
+    "B_model": {
+     "mrr": 0.9916666666666667,
+     "recall": 1.0,
+     "count": 60
+    },
+    "C_colloquial": {
+     "mrr": 0.5161111111111111,
+     "recall": 0.7666666666666667,
+     "count": 60
+    },
+    "E_multi": {
+     "mrr": 0.18583333333333335,
+     "recall": 0.48333333333333334,
+     "count": 60
+    }
+   },
+   "mrr": 0.6102083333333332,
+   "recall": 0.7666666666666667
+  },
+  "hybrid": {
+   "count": 240,
+   "errors": 0,
+   "buckets": {
+    "A_policy": {
+     "mrr": 0.7722222222222223,
+     "recall": 0.8166666666666667,
+     "count": 60
+    },
+    "B_model": {
+     "mrr": 0.9666666666666667,
+     "recall": 1.0,
+     "count": 60
+    },
+    "C_colloquial": {
+     "mrr": 0.8527777777777777,
+     "recall": 0.95,
+     "count": 60
+    },
+    "E_multi": {
+     "mrr": 0.25861111111111107,
+     "recall": 0.6666666666666666,
+     "count": 60
+    }
+   },
+   "mrr": 0.7125694444444445,
+   "recall": 0.8583333333333333
+  },
+  "hybrid_rerank": {
+   "count": 240,
+   "errors": 0,
+   "buckets": {
+    "A_policy": {
+     "mrr": 0.7805555555555556,
+     "recall": 0.8166666666666667,
+     "count": 60
+    },
+    "B_model": {
+     "mrr": 1.0,
+     "recall": 1.0,
+     "count": 60
+    },
+    "C_colloquial": {
+     "mrr": 0.9055555555555556,
+     "recall": 0.95,
+     "count": 60
+    },
+    "E_multi": {
+     "mrr": 0.2533333333333333,
+     "recall": 0.65,
+     "count": 60
+    }
+   },
+   "mrr": 0.7348611111111112,
+   "recall": 0.8541666666666666
+  }
+ },
+ "evidence_coverage": {
+  "vector": {
+   "count": 300,
+   "errors": 0,
+   "buckets": {
+    "A_policy": {
+     "coverage": 0.8,
+     "count": 60
+    },
+    "B_model": {
+     "coverage": 1.0,
+     "count": 60
+    },
+    "C_colloquial": {
+     "coverage": 0.95,
+     "count": 60
+    },
+    "E_multi": {
+     "coverage": 0.826388888888889,
+     "count": 60
+    },
+    "D_absent": {
+     "coverage": null,
+     "count": 60
+    }
+   },
+   "coverage": 0.8940972222222222
+  },
+  "bm25": {
+   "count": 300,
+   "errors": 0,
+   "buckets": {
+    "A_policy": {
+     "coverage": 0.8,
+     "count": 60
+    },
+    "B_model": {
+     "coverage": 1.0,
+     "count": 60
+    },
+    "C_colloquial": {
+     "coverage": 0.7833333333333333,
+     "count": 60
+    },
+    "E_multi": {
+     "coverage": 0.7458333333333333,
+     "count": 60
+    },
+    "D_absent": {
+     "coverage": null,
+     "count": 60
+    }
+   },
+   "coverage": 0.8322916666666667
+  },
+  "hybrid": {
+   "count": 300,
+   "errors": 0,
+   "buckets": {
+    "A_policy": {
+     "coverage": 0.8,
+     "count": 60
+    },
+    "B_model": {
+     "coverage": 1.0,
+     "count": 60
+    },
+    "C_colloquial": {
+     "coverage": 0.95,
+     "count": 60
+    },
+    "E_multi": {
+     "coverage": 0.8152777777777778,
+     "count": 60
+    },
+    "D_absent": {
+     "coverage": null,
+     "count": 60
+    }
+   },
+   "coverage": 0.8913194444444444
+  },
+  "hybrid_rerank": {
+   "count": 300,
+   "errors": 0,
+   "buckets": {
+    "A_policy": {
+     "coverage": 0.8,
+     "count": 60
+    },
+    "B_model": {
+     "coverage": 1.0,
+     "count": 60
+    },
+    "C_colloquial": {
+     "coverage": 0.95,
+     "count": 60
+    },
+    "E_multi": {
+     "coverage": 0.8097222222222222,
+     "count": 60
+    },
+    "D_absent": {
+     "coverage": null,
+     "count": 60
+    }
+   },
+   "coverage": 0.8899305555555556
+  }
+ },
+ "generation": {
+  "answer_coverage": {
+   "vector": {
+    "count": 121,
+    "errors": 0,
+    "buckets": {
+     "A_policy": {
+      "answer_coverage": 0.7589285714285714,
+      "count": 56
+     },
+     "B_model": {
+      "answer_coverage": 0.71875,
+      "count": 16
+     },
+     "C_colloquial": {
+      "answer_coverage": 0.6842105263157895,
+      "count": 19
+     },
+     "E_multi": {
+      "answer_coverage": 0.6027777777777777,
+      "count": 30
+     }
+    },
+    "answer_coverage": 0.703168044077135
+   },
+   "bm25": {
+    "count": 123,
+    "errors": 0,
+    "buckets": {
+     "A_policy": {
+      "answer_coverage": 0.7321428571428571,
+      "count": 56
+     },
+     "B_model": {
+      "answer_coverage": 0.75,
+      "count": 18
+     },
+     "C_colloquial": {
+      "answer_coverage": 0.36363636363636365,
+      "count": 22
+     },
+     "E_multi": {
+      "answer_coverage": 0.5401234567901235,
+      "count": 27
+     }
+    },
+    "answer_coverage": 0.6266937669376693
+   },
+   "hybrid": {
+    "count": 116,
+    "errors": 0,
+    "buckets": {
+     "A_policy": {
+      "answer_coverage": 0.7456140350877193,
+      "count": 57
+     },
+     "B_model": {
+      "answer_coverage": 0.7857142857142857,
+      "count": 14
+     },
+     "C_colloquial": {
+      "answer_coverage": 0.7619047619047619,
+      "count": 21
+     },
+     "E_multi": {
+      "answer_coverage": 0.607638888888889,
+      "count": 24
+     }
+    },
+    "answer_coverage": 0.7248563218390804
+   },
+   "hybrid_rerank": {
+    "count": 122,
+    "errors": 0,
+    "buckets": {
+     "A_policy": {
+      "answer_coverage": 0.7456140350877193,
+      "count": 57
+     },
+     "B_model": {
+      "answer_coverage": 0.84375,
+      "count": 16
+     },
+     "C_colloquial": {
+      "answer_coverage": 0.8,
+      "count": 20
+     },
+     "E_multi": {
+      "answer_coverage": 0.5948275862068966,
+      "count": 29
+     }
+    },
+    "answer_coverage": 0.7315573770491803
+   }
+  },
+  "faithfulness": {
+   "vector": {
+    "judged": 121,
+    "fabricated": 3,
+    "call_failed": 125,
+    "fabricated_rate": 0.024793388429752067
+   },
+   "bm25": {
+    "judged": 123,
+    "fabricated": 1,
+    "call_failed": 125,
+    "fabricated_rate": 0.008130081300813009
+   },
+   "hybrid": {
+    "judged": 116,
+    "fabricated": 1,
+    "call_failed": 132,
+    "fabricated_rate": 0.008620689655172414
+   },
+   "hybrid_rerank": {
+    "judged": 122,
+    "fabricated": 1,
+    "call_failed": 126,
+    "fabricated_rate": 0.00819672131147541
+   }
+  },
+  "refusal": {
+   "D_absent": {
+    "vector": {
+     "total": 54,
+     "refused": 54,
+     "rate": 1.0
+    },
+    "bm25": {
+     "total": 52,
+     "refused": 52,
+     "rate": 1.0
+    },
+    "hybrid": {
+     "total": 52,
+     "refused": 52,
+     "rate": 1.0
+    },
+    "hybrid_rerank": {
+     "total": 52,
+     "refused": 52,
+     "rate": 1.0
+    }
+   }
+  },
+  "cases": [
+   {
+    "eval_id": "A26|vec",
+    "bucket": "A_policy",
+    "query": "100 积分能抵多少现金,一笔订单最多抵多少",
+    "strategy": "vector",
+    "answer": "100 积分抵 1 元现金 [1]。一笔订单最多抵扣的现金金额以平台实际处理进度为准。",
+    "reason": "一笔订单最多抵扣金额未在证据中体现",
+    "citations": [
+     {
+      "n": 1,
+      "section_path": "商品与购物 FAQ > 会员等级与积分规则",
+      "question": "会员等级与积分规则",
+      "answer": "会员分为普通、银卡、金卡三档,按累计消费自动升级。每消费 1 元得 1 积分,积分可在结算时抵扣,100 积分抵 1 元。",
+      "cited": true
+     },
+     {
+      "n": 2,
+      "section_path": "历史对话挖掘/mine-20261125123511",
+      "question": "订单满多少包邮啊？我买了个 80 块的东西要运费吗",
+      "answer": "未满 99 元需要收取 10 元运费；订单满 99 元就免运费。您这个 80 元的订单会加收 10 元运费，可以再添一件凑单到 99 元免运费。",
+      "cited": false
+     },
+     {
+      "n": 3,
+      "section_path": "商品与购物 FAQ > 优惠券和满减怎么用",
+      "question": "优惠券和满减怎么用",
+      "answer": "优惠券在结算页「使用优惠券」中勾选,满减活动自动叠加在商品页标示的门槛上;同一订单一般限用一张店铺券,活动细则以页面为准。",
+      "cited": false
+     },
+     {
+      "n": 4,
+      "section_path": "商品与购物 FAQ > 支持哪些支付方式",
+      "question": "支持哪些支付方式",
+      "answer": "下单支持支付宝、微信支付与主流银行储蓄卡/信用卡在线支付。暂不支持线下汇款,支付遇到问题可重试或更换支付方式。",
+      "cited": false
+     },
+     {
+      "n": 5,
+      "section_path": "商品与购物 FAQ > 运费怎么算",
+      "question": "运费怎么算",
+      "answer": "单笔订单满 99 元包邮,未满收取 10 元运费,偏远地区运费另计。邮费即运费,按此规则收取。",
+      "cited": false
+     }
+    ],
+    "judge_model": "THUDM/GLM-4-9B-0414"
+   },
+   {
+    "eval_id": "A26|bm25",
+    "bucket": "A_policy",
+    "query": "100 积分能抵多少现金,一笔订单最多抵多少",
+    "strategy": "bm25",
+    "answer": "100 积分抵 1 元现金 [1]。一笔订单最多抵扣的现金金额以平台实际处理进度为准。",
+    "reason": "一笔订单最多抵扣金额的事实主张在证据中找不到依据",
+    "citations": [
+     {
+      "n": 1,
+      "section_path": "商品与购物 FAQ > 会员等级与积分规则",
+      "question": "会员等级与积分规则",
+      "answer": "会员分为普通、银卡、金卡三档,按累计消费自动升级。每消费 1 元得 1 积分,积分可在结算时抵扣,100 积分抵 1 元。",
+      "cited": true
+     },
+     {
+      "n": 2,
+      "section_path": "历史对话挖掘/mine-20261125123511",
+      "question": "订单满多少包邮啊？我买了个 80 块的东西要运费吗",
+      "answer": "未满 99 元需要收取 10 元运费；订单满 99 元就免运费。您这个 80 元的订单会加收 10 元运费，可以再添一件凑单到 99 元免运费。",
+      "cited": false
+     },
+     {
+      "n": 3,
+      "section_path": "商品与购物 FAQ > 订单可以修改或取消吗",
+      "question": "订单可以修改或取消吗",
+      "answer": "订单未发货前可在「我的订单」自助取消;已发货订单无法修改收货信息,可拒收后走退款流程。修改商品数量需取消后重新下单。",
+      "cited": false
+     },
+     {
+      "n": 4,
+      "section_path": "商品与购物 FAQ > 如何申请退款",
+      "question": "如何申请退款",
+      "answer": "在「我的订单」找到对应订单点击「申请退款」,按提示提交,审核通过后原路退回。",
+      "cited": false
+     },
+     {
+      "n": 5,
+      "section_path": "商品与购物 FAQ > 运费怎么算",
+      "question": "运费怎么算",
+      "answer": "单笔订单满 99 元包邮,未满收取 10 元运费,偏远地区运费另计。邮费即运费,按此规则收取。",
+      "cited": false
+     }
+    ],
+    "judge_model": "THUDM/GLM-4-9B-0414"
+   },
+   {
+    "eval_id": "A26|hy",
+    "bucket": "A_policy",
+    "query": "100 积分能抵多少现金,一笔订单最多抵多少",
+    "strategy": "hybrid",
+    "answer": "100 积分抵 1 元现金 [1]。一笔订单最多抵扣的现金金额以平台实际处理进度为准。",
+    "reason": "一笔订单最多抵扣金额未在证据中体现",
+    "citations": [
+     {
+      "n": 1,
+      "section_path": "商品与购物 FAQ > 会员等级与积分规则",
+      "question": "会员等级与积分规则",
+      "answer": "会员分为普通、银卡、金卡三档,按累计消费自动升级。每消费 1 元得 1 积分,积分可在结算时抵扣,100 积分抵 1 元。",
+      "cited": true
+     },
+     {
+      "n": 2,
+      "section_path": "商品与购物 FAQ > 优惠券和满减怎么用",
+      "question": "优惠券和满减怎么用",
+      "answer": "优惠券在结算页「使用优惠券」中勾选,满减活动自动叠加在商品页标示的门槛上;同一订单一般限用一张店铺券,活动细则以页面为准。",
+      "cited": false
+     },
+     {
+      "n": 3,
+      "section_path": "商品与购物 FAQ > 运费怎么算",
+      "question": "运费怎么算",
+      "answer": "单笔订单满 99 元包邮,未满收取 10 元运费,偏远地区运费另计。邮费即运费,按此规则收取。",
+      "cited": false
+     },
+     {
+      "n": 4,
+      "section_path": "历史对话挖掘/mine-20261125123511",
+      "question": "订单满多少包邮啊？我买了个 80 块的东西要运费吗",
+      "answer": "未满 99 元需要收取 10 元运费；订单满 99 元就免运费。您这个 80 元的订单会加收 10 元运费，可以再添一件凑单到 99 元免运费。",
+      "cited": false
+     },
+     {
+      "n": 5,
+      "section_path": "商品与购物 FAQ > 订单可以修改或取消吗",
+      "question": "订单可以修改或取消吗",
+      "answer": "订单未发货前可在「我的订单」自助取消;已发货订单无法修改收货信息,可拒收后走退款流程。修改商品数量需取消后重新下单。",
+      "cited": false
+     }
+    ],
+    "judge_model": "THUDM/GLM-4-9B-0414"
+   },
+   {
+    "eval_id": "A26|hyrr",
+    "bucket": "A_policy",
+    "query": "100 积分能抵多少现金,一笔订单最多抵多少",
+    "strategy": "hybrid_rerank",
+    "answer": "100 积分抵 1 元现金 [1]。一笔订单最多抵扣的现金金额以平台实际处理进度为准 [1]。",
+    "reason": "一笔订单最多抵扣金额未在证据中体现",
+    "citations": [
+     {
+      "n": 1,
+      "section_path": "商品与购物 FAQ > 会员等级与积分规则",
+      "question": "会员等级与积分规则",
+      "answer": "会员分为普通、银卡、金卡三档,按累计消费自动升级。每消费 1 元得 1 积分,积分可在结算时抵扣,100 积分抵 1 元。",
+      "cited": true
+     },
+     {
+      "n": 2,
+      "section_path": "商品与购物 FAQ > 优惠券和满减怎么用",
+      "question": "优惠券和满减怎么用",
+      "answer": "优惠券在结算页「使用优惠券」中勾选,满减活动自动叠加在商品页标示的门槛上;同一订单一般限用一张店铺券,活动细则以页面为准。",
+      "cited": false
+     },
+     {
+      "n": 3,
+      "section_path": "历史对话挖掘/mine-20261125123511",
+      "question": "订单满多少包邮啊？我买了个 80 块的东西要运费吗",
+      "answer": "未满 99 元需要收取 10 元运费；订单满 99 元就免运费。您这个 80 元的订单会加收 10 元运费，可以再添一件凑单到 99 元免运费。",
+      "cited": false
+     },
+     {
+      "n": 4,
+      "section_path": "商品与购物 FAQ > 运费怎么算",
+      "question": "运费怎么算",
+      "answer": "单笔订单满 99 元包邮,未满收取 10 元运费,偏远地区运费另计。邮费即运费,按此规则收取。",
+      "cited": false
+     },
+     {
+      "n": 5,
+      "section_path": "商品与购物 FAQ > 订单可以修改或取消吗",
+      "question": "订单可以修改或取消吗",
+      "answer": "订单未发货前可在「我的订单」自助取消;已发货订单无法修改收货信息,可拒收后走退款流程。修改商品数量需取消后重新下单。",
+      "cited": false
+     }
+    ],
+    "judge_model": "THUDM/GLM-4-9B-0414"
+   },
+   {
+    "eval_id": "A30|vec",
+    "bucket": "A_policy",
+    "query": "纸质专票哪种账户能申请,快递费谁付",
+    "strategy": "vector",
+    "answer": "纸质专票暂时没有查到相关信息，您可以通过 App 内「我的」-「联系客服」咨询人工客服。快递费以平台实际处理进度为准。",
+    "reason": "快递费主张无证据支撑",
+    "citations": [
+     {
+      "n": 1,
+      "section_path": "商品与购物 FAQ > 发票如何开具",
+      "question": "发票如何开具",
+      "answer": "在「我的订单」-「申请开票」提交抬头与税号,电子发票将于 3 个工作日内发送至邮箱。",
+      "cited": false
+     },
+     {
+      "n": 2,
+      "section_path": "商品与购物 FAQ > 运费怎么算",
+      "question": "运费怎么算",
+      "answer": "单笔订单满 99 元包邮,未满收取 10 元运费,偏远地区运费另计。邮费即运费,按此规则收取。",
+      "cited": false
+     },
+     {
+      "n": 3,
+      "section_path": "售后手册 > 会员专属售后权益",
+      "question": "会员专属售后权益",
+      "answer": "金卡会员享优先客服接入与上门取件退换货;银卡会员享退换货运费权益 1 次/月。具体权益以会员中心页面标注为准。",
+      "cited": false
+     },
+     {
+      "n": 4,
+      "section_path": "商品与购物 FAQ > 配送范围与偏远地区",
+      "question": "配送范围与偏远地区",
+      "answer": "全国大部分地区支持配送,新疆、西藏、内蒙古等偏远地区运费另计且时效顺延;港澳台及海外暂不支持自营配送。",
+      "cited": false
+     },
+     {
+      "n": 5,
+      "section_path": "商品与购物 FAQ > 会员运费权益",
+      "question": "会员运费权益",
+      "answer": "金卡会员每月享 3 次免运费权益,银卡会员享 1 次;权益不与偏远地区附加运费冲抵,当月未用完不结转。",
+      "cited": false
+     }
+    ],
+    "judge_model": "THUDM/GLM-4-9B-0414"
+   },
+   {
+    "eval_id": "E53|vec",
+    "bucket": "E_multi",
+    "query": "我想开票又想申请价保,两个各要多久",
+    "strategy": "vector",
+    "answer": "价格保护申请的处理时限为 3 个工作日 [1][4]，开票申请的处理时限为 3 个工作日 [2][4]。以平台实际处理进度为准。",
+    "reason": "开票申请的处理时限应为3个工作日，但证据[2]和[4]未提及开票申请的处理时限为3个工作日，属于凭空数值编造。",
+    "citations": [
+     {
+      "n": 1,
+      "section_path": "商品与购物 FAQ > 价格保护怎么申请",
+      "question": "价格保护怎么申请",
+      "answer": "自营商品支持下单后 7 天内价保,期间若同款降价可在「我的订单」-「申请价保」提交,差价将退回原支付渠道。",
+      "cited": true
+     },
+     {
+      "n": 2,
+      "section_path": "商品与购物 FAQ > 发票如何开具",
+      "question": "发票如何开具",
+      "answer": "在「我的订单」-「申请开票」提交抬头与税号,电子发票将于 3 个工作日内发送至邮箱。",
+      "cited": true
+     },
+     {
+      "n": 3,
+      "section_path": "退货退款政策 > 质量问题与保修",
+      "question": "质量问题与保修",
+      "answer": "电子类商品自签收起保修 12 个月,保修期内非人为损坏可申请免费维修或换货;人为损坏、超保商品维修可能收取工本费。",
+      "cited": false
+     },
+     {
+      "n": 4,
+      "section_path": "售后手册 > 常见问题处理时限",
+      "question": "常见问题处理时限",
+      "answer": "| 问题类型 | 首次响应 | 处理时限 |\n| --- | --- | --- |\n| 退款 | 2 小时 | 3 个工作日 |\n| 换货 | 2 小时 | 5 个工作日 |\n| 维修 | 4 小时 | 7 个工作日 |\n| 投诉 | 1 小时 | 3 个工作日 |\n| 发票 | 4 小时 | 3 个工作日 |\n| 物流异常 | 2 小时 | 5 个工作日 |\n| 商品咨询 | 1 小时 | 当日 |\n| 价格保护 | 2 小时 | 3 个工作日 |\n| 账户问题 | 2 小时 | 3 个工作日 |\n| 退换货运费 | 2 小时 | 3 个工作日 |\n| 缺货补发 | 2 小时 | 5 个工作日 |\n| 其他 | 4 小时 | 7 个工作日 |",
+      "cited": true
+     },
+     {
+      "n": 5,
+      "section_path": "退货退款政策 > 预售与定金",
+      "question": "预售与定金",
+      "answer": "预售商品以详情页标注的时间发货;定金支付后不支持无理由退定金,尾款未按时支付的,定金按活动规则处理。",
+      "cited": false
+     }
+    ],
+    "judge_model": "THUDM/GLM-4-9B-0414"
+   }
+  ],
+  "errors": [
+   "A57/bm25: OpenAIRateLimitError",
+   "A57/hybrid: OpenAIRateLimitError",
+   "A58/vector: OpenAIRateLimitError",
+   "A57/hybrid_rerank: OpenAIRateLimitError",
+   "A58/bm25: OpenAIRateLimitError",
+   "A58/hybrid: OpenAIRateLimitError",
+   "A59/vector: OpenAIRateLimitError",
+   "A59/bm25: OpenAIRateLimitError",
+   "A60/bm25: OpenAIRateLimitError",
+   "A60/hybrid: OpenAIRateLimitError",
+   "A60/hybrid_rerank: OpenAIRateLimitError",
+   "B1/vector: OpenAIRateLimitError",
+   "B1/bm25: OpenAIRateLimitError",
+   "B1/hybrid: OpenAIRateLimitError",
+   "B3/bm25: OpenAIRateLimitError",
+   "B3/hybrid: OpenAIRateLimitError",
+   "B3/hybrid_rerank: OpenAIRateLimitError",
+   "B4/vector: OpenAIRateLimitError",
+   "B5/vector: OpenAIRateLimitError",
+   "B5/hybrid_rerank: OpenAIRateLimitError",
+   "B6/vector: OpenAIRateLimitError",
+   "B6/bm25: OpenAIRateLimitError",
+   "B10/bm25: OpenAIRateLimitError",
+   "B11/hybrid: OpenAIRateLimitError",
+   "B11/hybrid_rerank: OpenAIRateLimitError",
+   "B12/vector: OpenAIRateLimitError",
+   "B12/bm25: OpenAIRateLimitError",
+   "B12/hybrid_rerank: OpenAIRateLimitError",
+   "B13/hybrid_rerank: OpenAIRateLimitError",
+   "B14/vector: OpenAIRateLimitError",
+   "B14/bm25: OpenAIRateLimitError",
+   "B14/hybrid_rerank: OpenAIRateLimitError",
+   "B14/hybrid: OpenAIRateLimitError",
+   "B15/vector: OpenAIRateLimitError",
+   "B15/bm25: OpenAIRateLimitError",
+   "B15/hybrid: OpenAIRateLimitError",
+   "B15/hybrid_rerank: OpenAIRateLimitError",
+   "B16/vector: OpenAIRateLimitError",
+   "B16/bm25: OpenAIRateLimitError",
+   "B16/hybrid_rerank: OpenAIRateLimitError",
+   "B16/hybrid: OpenAIRateLimitError",
+   "B17/vector: OpenAIRateLimitError",
+   "B17/bm25: OpenAIRateLimitError",
+   "B19/hybrid: OpenAIRateLimitError",
+   "B19/hybrid_rerank: OpenAIRateLimitError",
+   "B20/vector: OpenAIRateLimitError",
+   "B20/bm25: OpenAIRateLimitError",
+   "B20/hybrid: OpenAIRateLimitError",
+   "B21/hybrid: OpenAIRateLimitError",
+   "B21/hybrid_rerank: OpenAIRateLimitError",
+   "B22/hybrid_rerank: OpenAIRateLimitError",
+   "B23/bm25: OpenAIRateLimitError",
+   "B23/hybrid: OpenAIRateLimitError",
+   "B23/hybrid_rerank: OpenAIRateLimitError",
+   "B24/vector: OpenAIRateLimitError",
+   "B26/hybrid_rerank: OpenAIRateLimitError",
+   "B27/vector: OpenAIRateLimitError",
+   "B27/bm25: OpenAIRateLimitError",
+   "B27/hybrid: OpenAIRateLimitError",
+   "B27/hybrid_rerank: OpenAIRateLimitError",
+   "B28/vector: OpenAIRateLimitError",
+   "B28/bm25: OpenAIRateLimitError",
+   "B28/hybrid: OpenAIRateLimitError",
+   "B28/hybrid_rerank: OpenAIRateLimitError",
+   "B29/hybrid: OpenAIRateLimitError",
+   "B30/hybrid_rerank: OpenAIRateLimitError",
+   "B31/vector: OpenAIRateLimitError",
+   "B31/bm25: OpenAIRateLimitError",
+   "B31/hybrid: OpenAIRateLimitError",
+   "B34/hybrid_rerank: OpenAIRateLimitError",
+   "B35/vector: OpenAIRateLimitError",
+   "B35/hybrid: OpenAIRateLimitError",
+   "B35/bm25: OpenAIRateLimitError",
+   "B37/vector: OpenAIRateLimitError",
+   "B36/hybrid_rerank: OpenAIRateLimitError",
+   "B40/vector: OpenAIRateLimitError",
+   "B40/bm25: OpenAIRateLimitError",
+   "B40/hybrid: OpenAIRateLimitError",
+   "B41/vector: OpenAIRateLimitError",
+   "B40/hybrid_rerank: OpenAIRateLimitError",
+   "B41/hybrid_rerank: OpenAIRateLimitError",
+   "B42/bm25: OpenAIRateLimitError",
+   "B42/hybrid: OpenAIRateLimitError",
+   "B42/hybrid_rerank: OpenAIRateLimitError",
+   "B43/vector: OpenAIRateLimitError",
+   "B43/bm25: OpenAIRateLimitError",
+   "B44/vector: OpenAIRateLimitError",
+   "B44/hybrid_rerank: OpenAIRateLimitError",
+   "B45/vector: OpenAIRateLimitError",
+   "B45/bm25: OpenAIRateLimitError",
+   "B48/bm25: OpenAIRateLimitError",
+   "B48/hybrid: OpenAIRateLimitError",
+   "B48/hybrid_rerank: OpenAIRateLimitError",
+   "B49/vector: OpenAIRateLimitError",
+   "B49/hybrid: OpenAIRateLimitError",
+   "B49/bm25: OpenAIRateLimitError",
+   "B52/vector: OpenAIRateLimitError",
+   "B51/hybrid_rerank: OpenAIRateLimitError",
+   "B52/bm25: OpenAIRateLimitError",
+   "B52/hybrid: OpenAIRateLimitError",
+   "B52/hybrid_rerank: OpenAIRateLimitError",
+   "B53/bm25: OpenAIRateLimitError",
+   "B53/vector: OpenAIRateLimitError",
+   "B53/hybrid: OpenAIRateLimitError",
+   "B56/vector: OpenAIRateLimitError",
+   "B55/hybrid_rerank: OpenAIRateLimitError",
+   "B56/bm25: OpenAIRateLimitError",
+   "B56/hybrid: OpenAIRateLimitError",
+   "B57/vector: OpenAIRateLimitError",
+   "B56/hybrid_rerank: OpenAIRateLimitError",
+   "B57/bm25: OpenAIRateLimitError",
+   "B57/hybrid: OpenAIRateLimitError",
+   "B57/hybrid_rerank: OpenAIRateLimitError",
+   "B58/vector: OpenAIRateLimitError",
+   "B58/bm25: OpenAIRateLimitError",
+   "B59/bm25: OpenAIRateLimitError",
+   "B59/hybrid: OpenAIRateLimitError",
+   "C2/vector: OpenAIRateLimitError",
+   "C2/bm25: OpenAIRateLimitError",
+   "C2/hybrid: OpenAIRateLimitError",
+   "C2/hybrid_rerank: OpenAIRateLimitError",
+   "C4/bm25: OpenAIRateLimitError",
+   "C4/hybrid: OpenAIRateLimitError",
+   "C4/hybrid_rerank: OpenAIRateLimitError",
+   "C5/vector: OpenAIRateLimitError",
+   "C5/bm25: OpenAIRateLimitError",
+   "C5/hybrid: OpenAIRateLimitError",
+   "C5/hybrid_rerank: OpenAIRateLimitError",
+   "C6/vector: OpenAIRateLimitError",
+   "C7/bm25: OpenAIRateLimitError",
+   "C7/hybrid: OpenAIRateLimitError",
+   "C7/hybrid_rerank: OpenAIRateLimitError",
+   "C8/bm25: OpenAIRateLimitError",
+   "C8/vector: OpenAIRateLimitError",
+   "C8/hybrid: OpenAIRateLimitError",
+   "C8/hybrid_rerank: OpenAIRateLimitError",
+   "C9/hybrid_rerank: OpenAIRateLimitError",
+   "C10/hybrid_rerank: OpenAIRateLimitError",
+   "C13/vector: OpenAIRateLimitError",
+   "C13/bm25: OpenAIRateLimitError",
+   "C13/hybrid: OpenAIRateLimitError",
+   "C13/hybrid_rerank: OpenAIRateLimitError",
+   "C14/vector: OpenAIRateLimitError",
+   "C14/hybrid: OpenAIRateLimitError",
+   "C14/bm25: OpenAIRateLimitError",
+   "C14/hybrid_rerank: OpenAIRateLimitError",
+   "C15/vector: OpenAIRateLimitError",
+   "C15/bm25: OpenAIRateLimitError",
+   "C15/hybrid: OpenAIRateLimitError",
+   "C15/hybrid_rerank: OpenAIRateLimitError",
+   "C17/vector: OpenAIRateLimitError",
+   "C17/bm25: OpenAIRateLimitError",
+   "C17/hybrid: OpenAIRateLimitError",
+   "C17/hybrid_rerank: OpenAIRateLimitError",
+   "C18/vector: OpenAIRateLimitError",
+   "C18/bm25: OpenAIRateLimitError",
+   "C18/hybrid: OpenAIRateLimitError",
+   "C21/vector: OpenAIRateLimitError",
+   "C20/hybrid_rerank: OpenAIRateLimitError",
+   "C21/bm25: OpenAIRateLimitError",
+   "C21/hybrid: OpenAIRateLimitError",
+   "C21/hybrid_rerank: OpenAIRateLimitError",
+   "C22/vector: OpenAIRateLimitError",
+   "C22/bm25: OpenAIRateLimitError",
+   "C22/hybrid: OpenAIRateLimitError",
+   "C22/hybrid_rerank: OpenAIRateLimitError",
+   "C23/vector: OpenAIRateLimitError",
+   "C24/vector: OpenAIRateLimitError",
+   "C26/hybrid: OpenAIRateLimitError",
+   "C26/hybrid_rerank: OpenAIRateLimitError",
+   "C27/vector: OpenAIRateLimitError",
+   "C27/bm25: OpenAIRateLimitError",
+   "C27/hybrid: OpenAIRateLimitError",
+   "C27/hybrid_rerank: OpenAIRateLimitError",
+   "C28/vector: OpenAIRateLimitError",
+   "C28/hybrid: OpenAIRateLimitError",
+   "C29/hybrid: OpenAIRateLimitError",
+   "C29/hybrid_rerank: OpenAIRateLimitError",
+   "C30/vector: OpenAIRateLimitError",
+   "C30/bm25: OpenAIRateLimitError",
+   "C30/hybrid: OpenAIRateLimitError",
+   "C30/hybrid_rerank: OpenAIRateLimitError",
+   "C31/vector: OpenAIRateLimitError",
+   "C31/bm25: OpenAIRateLimitError",
+   "C31/hybrid: OpenAIRateLimitError",
+   "C33/bm25: OpenAIRateLimitError",
+   "C33/hybrid: OpenAIRateLimitError",
+   "C33/hybrid_rerank: OpenAIRateLimitError",
+   "C34/vector: OpenAIRateLimitError",
+   "C34/hybrid: OpenAIRateLimitError",
+   "C34/bm25: OpenAIRateLimitError",
+   "C35/hybrid_rerank: OpenAIRateLimitError",
+   "C36/vector: OpenAIRateLimitError",
+   "C36/bm25: OpenAIRateLimitError",
+   "C36/hybrid: OpenAIRateLimitError",
+   "C36/hybrid_rerank: OpenAIRateLimitError",
+   "C37/vector: OpenAIRateLimitError",
+   "C40/bm25: OpenAIRateLimitError",
+   "C40/hybrid: OpenAIRateLimitError",
+   "C40/hybrid_rerank: OpenAIRateLimitError",
+   "C41/vector: OpenAIRateLimitError",
+   "C41/bm25: OpenAIRateLimitError",
+   "C41/hybrid: OpenAIRateLimitError",
+   "C41/hybrid_rerank: OpenAIRateLimitError",
+   "C42/vector: OpenAIRateLimitError",
+   "C42/bm25: OpenAIRateLimitError",
+   "C42/hybrid: OpenAIRateLimitError",
+   "C42/hybrid_rerank: OpenAIRateLimitError",
+   "C43/vector: OpenAIRateLimitError",
+   "C43/bm25: OpenAIRateLimitError",
+   "C44/vector: OpenAIRateLimitError",
+   "C45/vector: OpenAIRateLimitError",
+   "C44/hybrid_rerank: OpenAIRateLimitError",
+   "C45/bm25: OpenAIRateLimitError",
+   "C45/hybrid: OpenAIRateLimitError",
+   "C45/hybrid_rerank: OpenAIRateLimitError",
+   "C46/hybrid: OpenAIRateLimitError",
+   "C46/vector: OpenAIRateLimitError",
+   "C46/bm25: OpenAIRateLimitError",
+   "C46/hybrid_rerank: OpenAIRateLimitError",
+   "C47/vector: OpenAIRateLimitError",
+   "C47/bm25: OpenAIRateLimitError",
+   "C47/hybrid: OpenAIRateLimitError",
+   "C49/hybrid: OpenAIRateLimitError",
+   "C49/hybrid_rerank: OpenAIRateLimitError",
+   "C51/vector: OpenAIRateLimitError",
+   "C52/bm25: OpenAIRateLimitError",
+   "C52/hybrid_rerank: OpenAIRateLimitError",
+   "C53/bm25: OpenAIRateLimitError",
+   "C55/hybrid: OpenAIRateLimitError",
+   "C55/hybrid_rerank: OpenAIRateLimitError",
+   "C56/vector: OpenAIRateLimitError",
+   "C56/bm25: OpenAIRateLimitError",
+   "C56/hybrid: OpenAIRateLimitError",
+   "C56/hybrid_rerank: OpenAIRateLimitError",
+   "C57/vector: OpenAIRateLimitError",
+   "C58/hybrid: OpenAIRateLimitError",
+   "C58/bm25: OpenAIRateLimitError",
+   "C58/hybrid_rerank: OpenAIRateLimitError",
+   "C60/hybrid: OpenAIRateLimitError",
+   "C60/hybrid_rerank: OpenAIRateLimitError",
+   "E1/bm25: OpenAIRateLimitError",
+   "E2/hybrid_rerank: OpenAIRateLimitError",
+   "E3/vector: OpenAIRateLimitError",
+   "E3/bm25: OpenAIRateLimitError",
+   "E3/hybrid: OpenAIRateLimitError",
+   "E3/hybrid_rerank: OpenAIRateLimitError",
+   "E4/vector: OpenAIRateLimitError",
+   "E9/vector: OpenAIRateLimitError",
+   "E9/bm25: OpenAIRateLimitError",
+   "E9/hybrid: OpenAIRateLimitError",
+   "E10/vector: OpenAIRateLimitError",
+   "E9/hybrid_rerank: OpenAIRateLimitError",
+   "E10/bm25: OpenAIRateLimitError",
+   "E10/hybrid: OpenAIRateLimitError",
+   "E14/hybrid: OpenAIRateLimitError",
+   "E15/bm25: OpenAIRateLimitError",
+   "E15/hybrid: OpenAIRateLimitError",
+   "E15/hybrid_rerank: OpenAIRateLimitError",
+   "E16/bm25: OpenAIRateLimitError",
+   "E16/vector: OpenAIRateLimitError",
+   "E19/bm25: OpenAIRateLimitError",
+   "E19/hybrid_rerank: OpenAIRateLimitError",
+   "E19/hybrid: OpenAIRateLimitError",
+   "E20/vector: OpenAIRateLimitError",
+   "E20/bm25: OpenAIRateLimitError",
+   "E20/hybrid_rerank: OpenAIRateLimitError",
+   "E20/hybrid: OpenAIRateLimitError",
+   "E21/vector: OpenAIRateLimitError",
+   "E21/bm25: OpenAIRateLimitError",
+   "E21/hybrid_rerank: OpenAIRateLimitError",
+   "E21/hybrid: OpenAIRateLimitError",
+   "E22/vector: OpenAIRateLimitError",
+   "E25/bm25: OpenAIRateLimitError",
+   "E25/hybrid: OpenAIRateLimitError",
+   "E25/hybrid_rerank: OpenAIRateLimitError",
+   "E26/vector: OpenAIRateLimitError",
+   "E26/bm25: OpenAIRateLimitError",
+   "E26/hybrid_rerank: OpenAIRateLimitError",
+   "E26/hybrid: OpenAIRateLimitError",
+   "E27/vector: OpenAIRateLimitError",
+   "E27/bm25: OpenAIRateLimitError",
+   "E31/hybrid: OpenAIRateLimitError",
+   "E31/hybrid_rerank: OpenAIRateLimitError",
+   "E32/vector: OpenAIRateLimitError",
+   "E32/bm25: OpenAIRateLimitError",
+   "E32/hybrid: OpenAIRateLimitError",
+   "E35/hybrid_rerank: OpenAIRateLimitError",
+   "E36/vector: OpenAIRateLimitError",
+   "E36/hybrid: OpenAIRateLimitError",
+   "E36/bm25: OpenAIRateLimitError",
+   "E36/hybrid_rerank: OpenAIRateLimitError",
+   "E37/vector: OpenAIRateLimitError",
+   "E37/bm25: OpenAIRateLimitError",
+   "E37/hybrid: OpenAIRateLimitError",
+   "E37/hybrid_rerank: OpenAIRateLimitError",
+   "E38/vector: OpenAIRateLimitError",
+   "E38/bm25: OpenAIRateLimitError",
+   "E39/hybrid: OpenAIRateLimitError",
+   "E39/hybrid_rerank: OpenAIRateLimitError",
+   "E40/vector: OpenAIRateLimitError",
+   "E40/bm25: OpenAIRateLimitError",
+   "E40/hybrid_rerank: OpenAIRateLimitError",
+   "E40/hybrid: OpenAIRateLimitError",
+   "E41/vector: OpenAIRateLimitError",
+   "E41/bm25: OpenAIRateLimitError",
+   "E41/hybrid: OpenAIRateLimitError",
+   "E43/bm25: OpenAIRateLimitError",
+   "E43/hybrid_rerank: OpenAIRateLimitError",
+   "E43/hybrid: OpenAIRateLimitError",
+   "E44/vector: OpenAIRateLimitError",
+   "E44/bm25: OpenAIRateLimitError",
+   "E45/hybrid: OpenAIRateLimitError",
+   "E45/hybrid_rerank: OpenAIRateLimitError",
+   "E46/vector: OpenAIRateLimitError",
+   "E46/bm25: OpenAIRateLimitError",
+   "E46/hybrid: OpenAIRateLimitError",
+   "E50/bm25: OpenAIRateLimitError",
+   "E51/bm25: OpenAIRateLimitError",
+   "E51/hybrid: OpenAIRateLimitError",
+   "E51/hybrid_rerank: OpenAIRateLimitError",
+   "E52/vector: OpenAIRateLimitError",
+   "E52/bm25: OpenAIRateLimitError",
+   "E52/hybrid: OpenAIRateLimitError",
+   "E54/hybrid: OpenAIRateLimitError",
+   "E55/hybrid: OpenAIRateLimitError",
+   "E55/hybrid_rerank: OpenAIRateLimitError",
+   "E56/vector: OpenAIRateLimitError",
+   "E56/hybrid_rerank: OpenAIRateLimitError",
+   "E57/vector: OpenAIRateLimitError",
+   "E57/hybrid_rerank: OpenAIRateLimitError",
+   "E58/vector: OpenAIRateLimitError",
+   "E58/bm25: OpenAIRateLimitError",
+   "E58/hybrid: OpenAIRateLimitError",
+   "E59/bm25: OpenAIRateLimitError",
+   "E60/vector: OpenAIRateLimitError",
+   "E60/hybrid: OpenAIRateLimitError",
+   "E60/bm25: OpenAIRateLimitError",
+   "E60/hybrid_rerank: OpenAIRateLimitError",
+   "D11/vector: OpenAIRateLimitError",
+   "D10/hybrid_rerank: OpenAIRateLimitError",
+   "D11/bm25: OpenAIRateLimitError",
+   "D11/hybrid: OpenAIRateLimitError",
+   "D13/hybrid: OpenAIRateLimitError",
+   "D13/hybrid_rerank: OpenAIRateLimitError",
+   "D14/bm25: OpenAIRateLimitError",
+   "D14/vector: OpenAIRateLimitError",
+   "D15/bm25: OpenAIConnectionError",
+   "D24/vector: OpenAIRateLimitError",
+   "D24/bm25: OpenAIRateLimitError",
+   "D24/hybrid: OpenAIRateLimitError",
+   "D24/hybrid_rerank: OpenAIRateLimitError",
+   "D26/hybrid: OpenAIRateLimitError",
+   "D26/hybrid_rerank: OpenAIRateLimitError",
+   "D27/bm25: OpenAIRateLimitError",
+   "D27/vector: OpenAIRateLimitError",
+   "D28/hybrid: OpenAIRateLimitError",
+   "D28/hybrid_rerank: OpenAIRateLimitError",
+   "D29/bm25: OpenAIRateLimitError",
+   "D36/bm25: OpenAIRateLimitError",
+   "D36/hybrid_rerank: OpenAIRateLimitError",
+   "D36/hybrid: OpenAIRateLimitError",
+   "D37/vector: OpenAIRateLimitError",
+   "D37/bm25: OpenAIRateLimitError",
+   "D37/hybrid: OpenAIRateLimitError",
+   "D37/hybrid_rerank: OpenAIRateLimitError",
+   "D38/vector: OpenAIRateLimitError",
+   "D38/hybrid_rerank: OpenAIRateLimitError",
+   "D40/hybrid: OpenAIRateLimitError"
+  ]
+ }
+}

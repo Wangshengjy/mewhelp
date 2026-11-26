@@ -7,9 +7,15 @@ from app.database import build_engine, build_session_factory
 from app.models import Base, Message
 from app.repositories.conversations import (
     append_message,
+    count_messages_after,
     create_conversation,
     get_conversation,
+    list_dialog_messages,
+    list_summary_segments,
     load_history,
+    update_conversation_summary,
+    update_layer1_from,
+    append_summary_segment,
 )
 
 SQLITE_URL = "sqlite+pysqlite:///:memory:"
@@ -136,3 +142,86 @@ def test_load_history_orders_by_append_order(session_factory):
 def test_load_history_for_unknown_conversation_is_empty(session_factory):
     with session_factory() as session:
         assert load_history(session, "missing-id") == []
+
+
+# ── ch07 · 分层上下文:锚点字段 + 分段摘要 ────────────────────────────────────
+
+
+def test_new_conversation_has_empty_layer_fields(session_factory):
+    with session_factory() as session:
+        conversation = create_conversation(session)
+        session.commit()
+        found = get_conversation(session, conversation.id)
+        assert found.summary is None
+        assert found.summary_upto_msg_id is None
+        assert found.layer1_from_msg_id is None
+
+
+def test_count_messages_after(session_factory):
+    with session_factory() as session:
+        conversation = create_conversation(session)
+        first = append_message(session, conversation.id, role="user", content="一")
+        append_message(session, conversation.id, role="assistant", content="二")
+        session.commit()
+        assert count_messages_after(session, conversation.id, 0) == 2
+        assert count_messages_after(session, conversation.id, first.id) == 1
+        assert count_messages_after(session, conversation.id, 10**9) == 0
+        assert count_messages_after(session, conversation.id, None) == 2
+
+
+def test_list_dialog_messages_filters_tool_rows(session_factory):
+    with session_factory() as session:
+        conversation = create_conversation(session)
+        append_message(session, conversation.id, role="user", content="一")
+        append_message(session, conversation.id, role="assistant", content="", tool_call_id="c1")
+        append_message(session, conversation.id, role="tool", content="工具", tool_call_id="c1")
+        append_message(session, conversation.id, role="assistant", content="二")
+        session.commit()
+        rows = list_dialog_messages(session, conversation.id)
+        assert [(row.role, row.content) for row in rows] == [
+            ("user", "一"),
+            ("assistant", ""),
+            ("assistant", "二"),
+        ]
+
+
+def test_update_layer1_from_and_summary_fields(session_factory):
+    with session_factory() as session:
+        conversation = create_conversation(session)
+        append_message(session, conversation.id, role="user", content="一")
+        session.commit()
+        update_layer1_from(session, conversation.id, 7)
+        update_conversation_summary(session, conversation.id, "梗概内容", 7)
+        session.commit()
+        found = get_conversation(session, conversation.id)
+        assert found.layer1_from_msg_id == 7
+        assert found.summary == "梗概内容"
+        assert found.summary_upto_msg_id == 7
+
+
+def test_append_summary_segment_appends_and_updates_projection(session_factory):
+    with session_factory() as session:
+        conversation = create_conversation(session)
+        append_message(session, conversation.id, role="user", content="一")
+        session.commit()
+        seq1 = append_summary_segment(session, conversation.id, 1, 4, "第一段梗概")
+        seq2 = append_summary_segment(session, conversation.id, 5, 9, "第二段梗概")
+        session.commit()
+        assert (seq1, seq2) == (1, 2)
+        found = get_conversation(session, conversation.id)
+        assert found.summary == "第一段梗概\n第二段梗概"
+        assert found.summary_upto_msg_id == 9
+        segments = list_summary_segments(session, conversation.id)
+        assert segments == ["第一段梗概", "第二段梗概"]
+
+
+def test_list_summary_segments_returns_latest_n_in_order(session_factory):
+    with session_factory() as session:
+        conversation = create_conversation(session)
+        append_message(session, conversation.id, role="user", content="一")
+        session.commit()
+        for index in range(1, 5):
+            append_summary_segment(session, conversation.id, index, index + 1, f"第{index}段")
+        session.commit()
+        assert list_summary_segments(session, conversation.id) == ["第1段", "第2段", "第3段", "第4段"]
+        assert list_summary_segments(session, conversation.id, limit=2) == ["第3段", "第4段"]

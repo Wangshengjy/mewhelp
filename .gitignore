@@ -2,4 +2,16 @@
 .venv/
 __pycache__/
 .pytest_cache/
+.pytest-tmp/
 *.py[cod]
+# ch10 · 训练权重/语料/数据集/检查点不进 git；验收报告（reports/）进 git
+data/ch10/*
+!data/ch10/reports
+log/
+data/*.pid
+data/*.txt
+# 课程文档提取与参考实现，不公开
+dev-notes/
+reference/
+htmlcov/
+.coverage

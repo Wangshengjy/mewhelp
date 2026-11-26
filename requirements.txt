@@ -6,3 +6,13 @@ SQLAlchemy>=2.0,<2.1
 PyMySQL
 pytest
 httpx
+# ch04 · RAG 进阶：Milvus 2.5 BM25/RRF 混合检索（服务端 milvusdb/milvus:v2.5.6）
+pymilvus>=2.5,<2.6
+# pymilvus 2.5 仍在部分路径使用 pkg_resources，setuptools>=81 已移除该模块
+setuptools<81
+# ch05 · Workflow + Agent 混合架构：LangGraph 图编排 + AsyncSqliteSaver 持久化
+langgraph>=1.0
+langgraph-checkpoint-sqlite>=3.0
+aiosqlite>=0.20
+# ch09 · 可观测性：Langfuse v3 自部署配套 SDK（3.x 终版：CallbackHandler 兼容 langchain 1.x + update_current_trace；4.x 起移除该方法，勿升级）
+langfuse==3.15.0

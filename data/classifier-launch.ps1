@@ -1,0 +1,1 @@
+& "C:\Users\85927\Desktop\Claude code\mewhelp\.venv\Scripts\python.exe" "C:\Users\85927\Desktop\Claude code\mewhelp\scripts\ch10\serve.py" *>> "C:\Users\85927\Desktop\Claude code\mewhelp\log\classifier-stderr.log"

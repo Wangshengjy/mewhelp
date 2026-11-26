@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>MewHelp · 知识库</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17233a;
+      --muted: #78849a;
+      --line: #e7ebf2;
+      --blue: #4569e8;
+      --blue-dark: #3455ca;
+      --blue-soft: #edf1ff;
+      --paper: #fff;
+      --canvas: #f5f7fb;
+      --shadow: 0 18px 55px rgba(37, 52, 91, .09);
+      --green: #36b58a;
+      --red: #d64550;
+      --amber: #d9902a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 14% 8%, rgba(112, 143, 255, .11), transparent 32rem),
+        var(--canvas);
+      color: var(--ink);
+      font-family: Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    button, textarea, input, select { font: inherit; }
+
+    .app {
+      width: min(100%, 980px);
+      min-height: 100vh;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, .77);
+      border-right: 1px solid rgba(226, 231, 241, .85);
+      border-left: 1px solid rgba(226, 231, 241, .85);
+      box-shadow: var(--shadow);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      min-height: 76px;
+      padding: 14px 28px;
+      background: rgba(255, 255, 255, .91);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand-mark {
+      display: grid;
+      flex: 0 0 42px;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #6888ff, #3d5fd8);
+      color: white;
+      font-size: 21px;
+      font-weight: 800;
+      box-shadow: 0 7px 16px rgba(69, 105, 232, .25);
+    }
+
+    .brand-copy { min-width: 0; }
+    .brand-copy h1 { margin: 0; font-size: 16px; letter-spacing: .01em; }
+    .brand-copy p { margin: 3px 0 0; color: var(--muted); font-size: 11px; letter-spacing: .13em; }
+
+    .topbar-spacer { flex: 1; }
+
+    .back-link {
+      padding: 8px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fbfcfe;
+      color: var(--blue);
+      font-size: 12px;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .back-link:hover { background: var(--blue-soft); }
+
+    main { padding: 22px 28px 40px; display: grid; gap: 18px; }
+
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px 20px;
+      box-shadow: 0 6px 22px rgba(37, 52, 91, .05);
+    }
+
+    .card h2 { margin: 0 0 4px; font-size: 15px; }
+    .card .hint { margin: 0 0 12px; color: var(--muted); font-size: 12px; }
+
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+    textarea, input[type="text"], input[type="number"], select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fbfcfe;
+      color: var(--ink);
+      outline: none;
+    }
+    textarea { min-height: 120px; resize: vertical; }
+    textarea:focus, input:focus, select:focus { border-color: var(--blue); }
+
+    .btn {
+      padding: 9px 16px;
+      border: none;
+      border-radius: 12px;
+      background: var(--blue);
+      color: white;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .btn:hover { background: var(--blue-dark); }
+    .btn:disabled { opacity: .55; cursor: default; }
+    .btn.ghost { background: #fff; color: var(--blue); border: 1px solid var(--line); }
+    .btn.ghost:hover { background: var(--blue-soft); }
+    .btn.danger { background: #fff; color: var(--red); border: 1px solid #f2d3d6; }
+    .btn.danger:hover { background: #fdf2f3; }
+    .btn.small { padding: 6px 12px; font-size: 12px; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+    .pill.key { background: #e6f7f0; color: #1f8f66; }
+    .pill.table { background: #fdf3e2; color: #a86a12; }
+    .pill.warn { background: #fdeef0; color: var(--red); }
+
+    .stat-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+    .stat {
+      flex: 1 1 120px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fbfcfe;
+    }
+    .stat b { display: block; font-size: 22px; margin-top: 2px; }
+    .stat span { color: var(--muted); font-size: 12px; }
+
+    .doc-list, .chunk-list, .result-list, .staging-list { display: grid; gap: 10px; margin-top: 10px; }
+
+    .doc-item, .chunk-item, .result-item, .staging-item {
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fbfcfe;
+    }
+    .doc-item .meta, .chunk-item .meta, .result-item .meta { color: var(--muted); font-size: 12px; }
+    .chunk-item .answer, .result-item .answer, .staging-item .answer {
+      margin: 6px 0 0;
+      white-space: pre-wrap;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .score { color: var(--blue); font-weight: 600; font-size: 12px; }
+
+    details.doc-toggle summary { cursor: pointer; font-weight: 600; font-size: 13px; }
+
+    .msg { margin: 0; padding: 10px 14px; border-radius: 12px; font-size: 13px; display: none; }
+    .msg.ok { display: block; background: #e6f7f0; color: #1f8f66; }
+    .msg.err { display: block; background: #fdeef0; color: var(--red); }
+    .msg.info { display: block; background: var(--blue-soft); color: var(--blue); }
+
+    label.inline { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand-mark">🐾</div>
+    <div class="brand-copy">
+      <h1>MewHelp · 知识库控制台</h1>
+      <p>CH03 · RAG 基础</p>
+    </div>
+    <div class="topbar-spacer"></div>
+    <a class="back-link" href="/">返回对话页</a>
+  </header>
+
+  <main>
+    <section class="card" id="stats-card">
+      <h2>双写账本</h2>
+      <p class="hint">knowledge_chunks 的 pending / done 与 Milvus 集合计数（Milvus 不可达时显示 —）。</p>
+      <div class="row">
+        <div class="stat"><span>pending 待向量化</span><b id="stat-pending">—</b></div>
+        <div class="stat"><span>done 已向量化</span><b id="stat-done">—</b></div>
+        <div class="stat"><span>Milvus 计数</span><b id="stat-milvus">—</b></div>
+        <div class="row"><button class="btn ghost small" id="btn-stats">刷新账本</button></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>材料清单与切块预览</h2>
+      <p class="hint">扫描 data/kb/*.md，按标题层级切块；关键条款与表格块会打标。</p>
+      <button class="btn ghost small" id="btn-materials">加载材料清单</button>
+      <div class="doc-list" id="materials"></div>
+    </section>
+
+    <section class="card">
+      <h2>粘贴 Markdown 就地预览</h2>
+      <p class="hint">只切不写，用于验证切块规则（标题切分 / 100 字重叠 / 表格复制表头）。</p>
+      <textarea id="preview-content" placeholder="# 文档标题&#10;## 小节标题&#10;正文……"></textarea>
+      <div class="row" style="margin-top:10px">
+        <select id="preview-type" style="width:auto">
+          <option value="policy">policy 政策</option>
+          <option value="faq">faq 问答</option>
+          <option value="manual">manual 手册</option>
+        </select>
+        <button class="btn small" id="btn-preview">切块预览</button>
+      </div>
+      <div class="chunk-list" id="preview-result"></div>
+    </section>
+
+    <section class="card">
+      <h2>手工录入</h2>
+      <p class="hint">切块 + 指纹查重 + 入库（pending）；勾选“顺手向量化”会直接嵌入写 Milvus（需配置 EMBED_API_KEY）。</p>
+      <textarea id="entry-content" placeholder="## 小节标题&#10;正文……"></textarea>
+      <div class="row" style="margin-top:10px">
+        <select id="entry-type" style="width:auto">
+          <option value="policy">policy 政策</option>
+          <option value="faq">faq 问答</option>
+          <option value="manual">manual 手册</option>
+        </select>
+        <label class="inline"><input type="checkbox" id="entry-vectorize"> 顺手向量化</label>
+        <button class="btn small" id="btn-entry">录入知识库</button>
+      </div>
+      <p class="msg" id="entry-msg"></p>
+    </section>
+
+    <section class="card">
+      <h2>对话挖知识 · 人工审核</h2>
+      <p class="hint">kb_dedup 标为 kept 的问答对在此逐条采纳（写入 knowledge_chunks）或弃用（留痕）。</p>
+      <div class="row" id="staging-counts"></div>
+      <button class="btn ghost small" id="btn-staging" style="margin-top:8px">刷新暂存列表</button>
+      <div class="staging-list" id="staging-list"></div>
+    </section>
+
+    <section class="card">
+      <h2>检索自测</h2>
+      <p class="hint">四种检索策略：dense / bm25 / hybrid（RRF 融合）/ hybrid_rerank（精排 Top-10，在线默认）；Milvus 不可用时自动降级为关键词检索。</p>
+      <div class="row">
+        <input type="text" id="search-query" placeholder="例如：退换货政策是怎样的" style="flex:2 1 260px">
+        <input type="number" id="search-topk" value="5" min="1" max="20" style="flex:0 1 90px">
+        <select id="search-mode" style="flex:0 1 150px">
+          <option value="dense">dense 向量</option>
+          <option value="bm25">bm25 关键词</option>
+          <option value="hybrid">hybrid 融合</option>
+          <option value="hybrid_rerank">hybrid_rerank 精排</option>
+        </select>
+        <button class="btn small" id="btn-search">检索</button>
+      </div>
+      <div class="result-list" id="search-result"></div>
+    </section>
+
+    <section class="card">
+      <h2>就地修块（ch04）</h2>
+      <p class="hint">diff data/kb/*.md 与 knowledge_chunks：按 section_path 指纹比对，就地更新改动块（保留 id、只重嵌入改动块）、删除消失块、新增新块。</p>
+      <button class="btn small" id="btn-repatch">执行就地修块</button>
+      <p class="msg" id="repatch-msg"></p>
+    </section>
+  </main>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  async function api(path, options) {
+    const response = await fetch(path, options);
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.detail || `HTTP ${response.status}`);
+    }
+    return payload;
+  }
+
+  function chunkHtml(chunk, extra) {
+    const badges = [];
+    if (chunk.is_key_clause) badges.push('<span class="pill key">关键条款</span>');
+    if (chunk.is_table_block) badges.push('<span class="pill table">表格块</span>');
+    if (extra && extra.score !== undefined && extra.score !== null) {
+      badges.push(`<span class="score">score=${Number(extra.score).toFixed(4)}</span>`);
+    }
+    return `<div class="chunk-item">
+      <div class="meta">[${chunk.category}] ${chunk.questions}</div>
+      <div>${badges.join(' ')}</div>
+      <p class="answer">${chunk.answer}</p>
+    </div>`;
+  }
+
+  function setMsg(id, kind, text) {
+    const node = $(id);
+    node.className = 'msg ' + kind;
+    node.textContent = text;
+  }
+
+  $('btn-stats').addEventListener('click', refreshStats);
+  async function refreshStats() {
+    try {
+      const data = await api('/api/kb/stats');
+      $('stat-pending').textContent = data.pending;
+      $('stat-done').textContent = data.done;
+      $('stat-milvus').textContent = data.milvus === null ? '—' : data.milvus;
+    } catch (err) { setMsg('entry-msg', 'err', '账本加载失败：' + err.message); }
+  }
+
+  $('btn-materials').addEventListener('click', async () => {
+    $('materials').innerHTML = '<span class="meta">加载中…</span>';
+    try {
+      const data = await api('/api/kb/materials');
+      $('materials').innerHTML = data.documents.map((doc) => `
+        <div class="doc-item">
+          <details class="doc-toggle">
+            <summary>${doc.file} · ${doc.chars} 字 · ${doc.chunk_count} 块 · 关键条款 ${doc.key_clause_count} · 表格块 ${doc.table_block_count}</summary>
+            <div class="chunk-list">${doc.chunks.map((chunk) => chunkHtml(chunk, {})).join('')}</div>
+          </details>
+        </div>`).join('');
+    } catch (err) { $('materials').innerHTML = `<span class="pill warn">加载失败：${err.message}</span>`; }
+  });
+
+  $('btn-preview').addEventListener('click', async () => {
+    try {
+      const data = await api('/api/kb/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: $('preview-content').value, content_type: $('preview-type').value })
+      });
+      $('preview-result').innerHTML =
+        `<div class="meta">共 ${data.chunk_count} 块 · 关键条款 ${data.key_clause_count} · 表格块 ${data.table_block_count}</div>` +
+        data.chunks.map((chunk) => chunkHtml(chunk, {})).join('');
+    } catch (err) { setMsg('entry-msg', 'err', '预览失败：' + err.message); }
+  });
+
+  $('btn-entry').addEventListener('click', async (event) => {
+    const button = event.target;
+    button.disabled = true;
+    try {
+      const data = await api('/api/kb/entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: $('entry-content').value,
+          content_type: $('entry-type').value,
+          vectorize: $('entry-vectorize').checked
+        })
+      });
+      setMsg('entry-msg', 'ok', data.message + (data.note ? `（${data.note}）` : ''));
+      refreshStats();
+    } catch (err) { setMsg('entry-msg', 'err', '录入失败：' + err.message); }
+    finally { button.disabled = false; }
+  });
+
+  const STATUS_LABELS = { extracted: '待去重', kept: '待审核', discarded: '去重丢弃', rejected: '已弃用', approved: '已采纳' };
+
+  $('btn-staging').addEventListener('click', refreshStaging);
+  async function refreshStaging() {
+    try {
+      const data = await api('/api/kb/staging');
+      $('staging-counts').innerHTML = Object.entries(data.counts)
+        .map(([status, count]) => `<span class="pill">${STATUS_LABELS[status] || status} · ${count}</span>`).join('');
+      $('staging-list').innerHTML = data.rows.map((row) => `
+        <div class="staging-item">
+          <div class="meta">#${row.id} · ${STATUS_LABELS[row.status] || row.status} · 批次 ${row.batch_no}</div>
+          <p class="answer"><b>问：</b>${row.question}<br><b>答：</b>${row.answer}</p>
+          ${row.status === 'kept' ? `
+            <div class="row" style="margin-top:8px">
+              <button class="btn small" onclick="decide(${row.id}, 'approve')">采纳入库</button>
+              <button class="btn danger small" onclick="decide(${row.id}, 'reject')">弃用</button>
+            </div>` : ''}
+        </div>`).join('') || '<span class="meta">暂无待审核内容</span>';
+    } catch (err) { setMsg('entry-msg', 'err', '暂存列表加载失败：' + err.message); }
+  }
+
+  async function decide(rowId, action) {
+    try {
+      const data = await api(`/api/kb/staging/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: rowId })
+      });
+      setMsg('entry-msg', 'ok', data.message);
+      refreshStaging();
+      refreshStats();
+    } catch (err) { setMsg('entry-msg', 'err', err.status === 409 ? '冲突：' + err.message : '操作失败：' + err.message); }
+  }
+
+  const MODE_LABELS = { dense: 'dense 向量', bm25: 'bm25 关键词', hybrid: 'hybrid 融合', hybrid_rerank: 'hybrid_rerank 精排', vector: 'dense 向量' };
+
+  $('btn-search').addEventListener('click', async () => {
+    try {
+      const data = await api('/api/kb/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: $('search-query').value,
+          top_k: Number($('search-topk').value) || 5,
+          mode: $('search-mode').value
+        })
+      });
+      const head = data.degraded
+        ? `<span class="pill warn">已降级：${data.note || '关键词检索'}</span>`
+        : `<span class="pill">${MODE_LABELS[data.mode] || data.mode}检索</span>`;
+      $('search-result').innerHTML = head + (data.results || []).map((item) => chunkHtml({
+        category: item.category,
+        questions: item.question,
+        answer: item.answer,
+        is_key_clause: false,
+        is_table_block: false
+      }, { score: item.score })).join('') || '';
+    } catch (err) { setMsg('entry-msg', 'err', '检索失败：' + err.message); }
+  });
+
+  $('btn-repatch').addEventListener('click', async (event) => {
+    const button = event.target;
+    button.disabled = true;
+    setMsg('repatch-msg', 'info', '正在比对 data/kb 与数据库，请稍候…');
+    try {
+      const data = await api('/api/kb/repatch', { method: 'POST' });
+      setMsg('repatch-msg', 'ok',
+        `修块完成：更新 ${data.updated} · 新增 ${data.added} · 删除 ${data.removed} · 不变 ${data.unchanged} · 重新向量化 ${data.revectorized}` +
+        (data.message ? `（${data.message}）` : ''));
+      refreshStats();
+    } catch (err) { setMsg('repatch-msg', 'err', '修块失败：' + err.message); }
+    finally { button.disabled = false; }
+  });
+
+  refreshStats();
+</script>
+</body>
+</html>

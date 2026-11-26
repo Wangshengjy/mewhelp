@@ -1,0 +1,13 @@
+# ch10 · 模型微调依赖组（对应课程 Plan 的 [dependency-groups] ml）
+# 本仓库无 pyproject/uv，单独成文件按需安装，主 requirements.txt 零污染：
+#   .\.venv\Scripts\python.exe -m pip install -r requirements-ml.txt --index-url https://pypi.tuna.tsinghua.edu.cn/simple
+# Windows 下 PyPI 的 torch wheel 即 CPU 版；正式训练需自备 CUDA 版 torch（官网按本机 CUDA 装法换源）。
+# 实装版本（2026-11-25，CPU 冒烟验证通过）：torch 2.15.0+cpu / transformers 5.24.1 / accelerate 1.16.0
+#   scikit-learn 1.9.1 / onnx 1.23.2 / onnxruntime 1.32.0 / tokenizers 0.23.3
+torch>=2.6
+transformers>=4.46
+accelerate>=1.0
+scikit-learn>=1.5
+onnx>=1.17
+onnxruntime>=1.20
+tokenizers>=0.20

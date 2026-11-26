@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MewHelp · 主题分布</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; background: #f3f6fc; color: #24304d; }
+    header { padding: 18px 28px; background: #ffffff; border-bottom: 1px solid #e3e9f6; display: flex; align-items: center; gap: 16px; }
+    header h1 { margin: 0; font-size: 18px; }
+    header nav { display: flex; gap: 12px; font-size: 13px; }
+    header nav a { color: #5a6c96; text-decoration: none; }
+    header nav a:hover { color: #3c56c4; }
+    header nav a.active { color: #3c56c4; font-weight: 600; }
+    main { max-width: 1080px; margin: 24px auto; padding: 0 20px; }
+    .stats { background: #ffffff; border: 1px solid #e3e9f6; border-radius: 12px; padding: 14px 18px; display: flex; gap: 28px; align-items: baseline; }
+    .stats .num { font-size: 26px; font-weight: 700; color: #3c56c4; }
+    .stats .label { font-size: 12px; color: #7787ab; }
+    .panel { background: #ffffff; border: 1px solid #e3e9f6; border-radius: 12px; margin-top: 18px; overflow: hidden; }
+    .panel h2 { margin: 0; padding: 12px 16px; font-size: 14px; border-bottom: 1px solid #edf1fa; color: #40507a; }
+    .bar-row { padding: 8px 16px; border-bottom: 1px solid #f0f3fb; }
+    .bar-row.zero { opacity: .45; }
+    .bar-head { display: flex; align-items: center; gap: 10px; }
+    .bar-head a.name { width: 76px; font-size: 13px; font-weight: 600; color: #3c56c4; text-decoration: none; }
+    .bar-head a.name:hover { text-decoration: underline; }
+    .bar-track { flex: 1; height: 14px; background: #f0f3fb; border-radius: 7px; overflow: hidden; }
+    .bar-fill { height: 100%; background: #3c56c4; border-radius: 7px; }
+    .bar-count { min-width: 34px; text-align: center; font-size: 12px; font-weight: 700; background: #e9efff; color: #3c56c4; border-radius: 999px; padding: 2px 8px; }
+    details.samples summary { font-size: 12px; color: #7787ab; cursor: pointer; user-select: none; margin-top: 6px; }
+    details.samples .s { font-size: 12px; color: #4a5878; background: #f4f7ff; border-radius: 8px; padding: 5px 9px; margin-top: 5px; }
+    details.samples a.more { font-size: 12px; color: #3c56c4; }
+    .empty { padding: 24px; text-align: center; color: #8b98ba; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>喵喵优选 · 主题分布</h1>
+    <nav>
+      <a href="/">对话页</a>
+      <a href="/kb">知识库</a>
+      <a href="/rag-eval">RAG 评估</a>
+      <a href="/observability">观测与成本</a>
+      <a href="/review">审核</a>
+      <a href="/topics" class="active">主题分布</a>
+    </nav>
+  </header>
+  <main>
+    <section class="stats">
+      <div><div class="num" id="total">–</div><div class="label">已归类问题总数</div></div>
+      <div><div class="num" style="font-size:14px;" id="latest">–</div><div class="label">最近归类时间</div></div>
+      <div style="margin-left:auto;"><div class="num" style="font-size:14px;" id="online">–</div><div class="label">分类器 :8110</div></div>
+    </section>
+    <section class="panel">
+      <h2>17 类条形图（按问题量降序；类目名点进该类问题列表）</h2>
+      <div id="bars"><div class="empty">加载中…</div></div>
+    </section>
+  </main>
+  <script>
+    async function load() {
+      const resp = await fetch("/api/topics/distribution");
+      const body = await resp.json();
+      document.getElementById("total").textContent = body.total;
+      document.getElementById("latest").textContent = body.latest || "（还没有归类记录）";
+      fetch("http://127.0.0.1:8110/healthz").then(r => r.json()).then(d => {
+        document.getElementById("online").textContent = d.ok ? "在线" : "离线";
+      }).catch(() => { document.getElementById("online").textContent = "离线"; });
+
+      const classes = [...body.classes].sort((a, b) => b.count - a.count);
+      const max = Math.max(...classes.map(c => c.count), 1);
+      const $bars = document.getElementById("bars");
+      $bars.replaceChildren();
+      if (!body.total) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "还没有归类数据 · 先跑 python -m scripts.ch10.classify_pool";
+        $bars.append(empty);
+        return;
+      }
+      for (const c of classes) {
+        const row = document.createElement("div");
+        row.className = "bar-row" + (c.count === 0 ? " zero" : "");
+        const head = document.createElement("div");
+        head.className = "bar-head";
+        const name = document.createElement("a");
+        name.className = "name";
+        name.href = `/topics/questions?label=${encodeURIComponent(c.label)}`;
+        name.textContent = c.label;
+        const track = document.createElement("div");
+        track.className = "bar-track";
+        const fill = document.createElement("div");
+        fill.className = "bar-fill";
+        fill.style.width = Math.round(c.count / max * 100) + "%";
+        track.append(fill);
+        const count = document.createElement("span");
+        count.className = "bar-count";
+        count.textContent = c.count;
+        head.append(name, track, count);
+        row.append(head);
+        const details = document.createElement("details");
+        details.className = "samples";
+        const summary = document.createElement("summary");
+        summary.textContent = `样例 ${c.samples.length} 条`;
+        details.append(summary);
+        for (const s of c.samples) {
+          const d = document.createElement("div");
+          d.className = "s";
+          d.textContent = s;
+          details.append(d);
+        }
+        const more = document.createElement("a");
+        more.className = "more";
+        more.href = `/topics/questions?label=${encodeURIComponent(c.label)}`;
+        more.textContent = `查看全部 ${c.count} 条 →`;
+        details.append(more);
+        row.append(details);
+        $bars.append(row);
+      }
+    }
+    load();
+  </script>
+</body>
+</html>

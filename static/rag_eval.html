@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MewHelp · RAG 评估台</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17233a; --muted: #78849a; --line: #e7ebf2;
+      --blue: #4569e8; --blue-soft: #edf1ff; --canvas: #f5f7fb;
+      --green: #2f7a5f; --red: #a33e42; --amber: #9a6a1f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--canvas); color: var(--ink);
+      font-family: Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 14px;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 26px 20px 60px; }
+    header.topbar { display: flex; align-items: center; gap: 13px; margin-bottom: 22px; }
+    .logo {
+      display: grid; width: 40px; height: 40px; place-items: center; border-radius: 13px;
+      background: linear-gradient(145deg, #6888ff, #3d5fd8); color: #fff; font-weight: 800;
+    }
+    .topbar h1 { margin: 0; font-size: 17px; }
+    .topbar p { margin: 3px 0 0; color: var(--muted); font-size: 11px; letter-spacing: .12em; }
+    .spacer { flex: 1; }
+    .btn {
+      padding: 9px 14px; border: 1px solid #dfe5ef; border-radius: 10px; background: #fff;
+      color: #43516a; font-size: 12px; cursor: pointer; transition: all .15s;
+    }
+    .btn:hover { border-color: #aebdf7; color: var(--blue); }
+    .btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .btn.primary:hover { background: #3455ca; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .card {
+      background: #fff; border: 1px solid var(--line); border-radius: 14px;
+      padding: 18px 20px; margin-bottom: 18px; box-shadow: 0 8px 28px rgba(37,52,91,.06);
+    }
+    .card h2 { margin: 0 0 12px; font-size: 15px; }
+    .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; color: var(--muted); font-size: 12px; }
+    .meta-grid b { color: var(--ink); font-weight: 650; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: left; }
+    th { color: var(--muted); font-size: 11px; font-weight: 650; letter-spacing: .04em; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tr.best td { background: #f4fbf8; }
+    .best-tag { color: var(--green); font-size: 11px; font-weight: 700; }
+    .missing { color: #b25c60; font-size: 12px; }
+    .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+    .buckets-table { margin-top: 10px; font-size: 12px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .tab {
+      padding: 7px 13px; border: 1px solid var(--line); border-radius: 999px; background: #fff;
+      color: #526078; font-size: 12px; cursor: pointer;
+    }
+    .tab.active { background: var(--blue-soft); border-color: #b9c9fb; color: var(--blue); font-weight: 700; }
+    .case { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; background: #fdfefe; }
+    .case-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; cursor: pointer; }
+    .case-id { font-weight: 750; color: #33456f; font-size: 12px; }
+    .case-bucket { color: var(--muted); font-size: 11px; }
+    .case-strategy { color: #536dd1; font-size: 11px; font-weight: 650; }
+    .case-status { font-size: 11px; padding: 2px 9px; border-radius: 999px; font-weight: 650; }
+    .status-未解决 { background: #fff1f1; color: var(--red); }
+    .status-已解决 { background: #eef8f3; color: var(--green); }
+    .status-无需解决 { background: #fbf4e4; color: var(--amber); }
+    .case-query { margin: 7px 0 0; font-size: 13px; }
+    .case-reason { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+    .case-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+    .case-actions input {
+      flex: 1; min-width: 220px; padding: 7px 11px; border: 1px solid #dfe5ef; border-radius: 9px; font: inherit; font-size: 12px;
+    }
+    .case-detail { display: none; margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; }
+    .case.open .case-detail { display: block; }
+    .case-detail h4 { margin: 6px 0; font-size: 12px; color: #33456f; }
+    .evi { border: 1px solid #edf0f7; border-radius: 9px; padding: 8px 11px; margin: 6px 0; font-size: 12px; background: #fbfcff; }
+    .evi .evi-n { font-weight: 750; color: #536dd1; margin-right: 6px; }
+    .evi.cited { border-color: #c6d2fb; background: #f2f5ff; }
+    .evi .cited-tag { color: var(--green); font-size: 10px; font-weight: 700; margin-left: 6px; }
+    .evi .evi-path { color: var(--muted); font-size: 11px; }
+    .answer-quote { background: #f7f9fd; border-left: 3px solid #b9c9fb; padding: 8px 12px; border-radius: 0 8px 8px 0; font-size: 12px; white-space: pre-wrap; }
+    .log-box {
+      max-height: 260px; overflow-y: auto; background: #101728; color: #c7d4ee;
+      border-radius: 10px; padding: 12px 14px; font-family: Consolas, "Courier New", monospace;
+      font-size: 12px; line-height: 1.6; white-space: pre-wrap; display: none;
+    }
+    .log-box.show { display: block; }
+    .pager { display: flex; gap: 8px; align-items: center; margin-top: 12px; color: var(--muted); font-size: 12px; }
+    .rates { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .rate-card { border: 1px solid var(--line); border-radius: 11px; padding: 11px 14px; background: #fbfcff; }
+    .rate-card .rate-label { color: var(--muted); font-size: 11px; }
+    .rate-card .rate-value { font-size: 21px; font-weight: 750; margin-top: 3px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div class="logo" aria-hidden="true">R</div>
+      <div>
+        <h1>RAG 评估台</h1>
+        <p>CHAPTER 04 · HYBRID RETRIEVAL EVALUATION</p>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn" id="refresh-btn" type="button">刷新报告</button>
+      <button class="btn primary" id="rerun-btn" type="button">就地重跑评估</button>
+    </header>
+
+    <section class="card" id="meta-card">
+      <h2>报告概览</h2>
+      <div class="meta-grid" id="meta-grid"></div>
+      <div class="empty" id="report-missing" hidden>还没有评估报告：先跑一轮评估（就地重跑或 <code>uv run python -m scripts.eval_rag</code>）。</div>
+    </section>
+
+    <section class="card" id="strategy-card">
+      <h2>四策略对比（MRR / Recall@K / 证据覆盖 / 答案覆盖）</h2>
+      <div id="strategy-summary"></div>
+      <div id="strategy-buckets"></div>
+    </section>
+
+    <section class="card">
+      <h2>编造个案台账</h2>
+      <div class="rates" id="faith-rates"></div>
+      <div class="tabs" id="faith-tabs"></div>
+      <div id="faith-list"></div>
+      <div class="pager">
+        <button class="btn" id="prev-page" type="button">上一页</button>
+        <span id="page-info"></span>
+        <button class="btn" id="next-page" type="button">下一页</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>重跑日志</h2>
+      <div class="log-box" id="log-box"></div>
+    </section>
+  </div>
+
+  <script>
+    (() => {
+      const K_DEFAULT = 5;
+      let report = null;
+      let currentStatus = "未解决";
+      let page = 1;
+      const pageSize = 10;
+      let pollTimer = null;
+
+      const fmt = (value, digits = 3) =>
+        value === null || value === undefined ? "—" : Number(value).toFixed(digits);
+
+      async function api(path, options) {
+        const response = await fetch(path, options);
+        if (!response.ok) {
+          let detail = `HTTP ${response.status}`;
+          try { detail = (await response.json()).detail || detail; } catch (_) {}
+          throw new Error(detail);
+        }
+        return response.json();
+      }
+
+      function renderMeta(meta) {
+        const grid = document.querySelector("#meta-grid");
+        if (!meta) { grid.innerHTML = ""; document.querySelector("#report-missing").hidden = false; return; }
+        document.querySelector("#report-missing").hidden = true;
+        const rows = [
+          ["评估集题数", `${meta.questions} 题`],
+          ["指标 K", `@${meta.k ?? K_DEFAULT}`],
+          ["嵌入模型", meta.embed_model || "—"],
+          ["重排模型", meta.rerank_model || "—"],
+          ["生成模型", meta.chat_model || "—"],
+          ["裁判模型", meta.judge_model || "—"],
+          ["本轮完成时间", (meta.generated_at || "").replace("T", " ").slice(0, 19)],
+          ["用时", `${meta.duration_seconds ?? "—"}s`],
+        ];
+        grid.innerHTML = rows.map(([k, v]) => `<span>${k}：<b>${v}</b></span>`).join("");
+      }
+
+      const STRATEGY_LABEL = {
+        vector: "纯 dense（vector）",
+        bm25: "纯 BM25",
+        hybrid: "混合 RRF（hybrid）",
+        hybrid_rerank: "混合+重排（hybrid_rerank）",
+      };
+
+      function bestStrategy(section, key) {
+        let best = null;
+        for (const [strategy, stats] of Object.entries(report[section] || {})) {
+          const value = stats?.[key];
+          if (typeof value === "number" && (best === null || value > best.value)) best = { strategy, value };
+        }
+        return best && best.strategy;
+      }
+
+      function renderStrategies() {
+        const summary = document.querySelector("#strategy-summary");
+        const buckets = document.querySelector("#strategy-buckets");
+        if (!report) { summary.innerHTML = '<div class="empty">暂无报告</div>'; buckets.innerHTML = ""; return; }
+        const rows = [];
+        for (const strategy of report.meta?.strategies || Object.keys(report.retrieval || {})) {
+          const retrieval = (report.retrieval || {})[strategy] || {};
+          const coverage = (report.evidence_coverage || {})[strategy] || {};
+          const answerCoverage = ((report.generation || {}).answer_coverage || {})[strategy] || {};
+          const faith = ((report.generation || {}).faithfulness || {})[strategy] || {};
+          const refusal = (((report.generation || {}).refusal || {}).D_absent || {})[strategy] || {};
+          rows.push({
+            strategy,
+            mrr: retrieval.mrr, recall: retrieval.recall,
+            coverage: coverage.coverage, answer: answerCoverage.answer_coverage,
+            fabricated: faith.fabricated, judged: faith.judged, fabricatedRate: faith.fabricated_rate,
+            refusalRate: refusal.rate, refusalTotal: refusal.total,
+          });
+        }
+        const bestMrr = bestStrategy("retrieval", "mrr");
+        summary.innerHTML = `<table>
+          <thead><tr>
+            <th>策略</th><th class="num">MRR@K</th><th class="num">Recall@K</th>
+            <th class="num">证据覆盖度</th><th class="num">答案覆盖度</th>
+            <th class="num">编造个案</th><th class="num">D 桶拒答率</th>
+          </tr></thead>
+          <tbody>${rows.map((row) => `<tr${row.strategy === (bestMrr && bestMrr.strategy) ? ' class="best"' : ""}>
+            <td>${STRATEGY_LABEL[row.strategy] || row.strategy}${row.strategy === (bestMrr && bestMrr.strategy) ? ' <span class="best-tag">MRR 最优</span>' : ""}</td>
+            <td class="num">${fmt(row.mrr)}</td>
+            <td class="num">${fmt(row.recall)}</td>
+            <td class="num">${fmt(row.coverage)}</td>
+            <td class="num">${fmt(row.answer)}</td>
+            <td class="num">${row.judged ? `${row.fabricated ?? 0}/${row.judged}（${fmt(row.fabricatedRate)}）` : "—"}</td>
+            <td class="num">${row.refusalTotal ? `${fmt(row.refusalRate)}` : "—"}</td>
+          </tr>`).join("")}</tbody></table>`;
+
+        const bucketRows = [];
+        const strategyList = report.meta?.strategies || Object.keys(report.retrieval || {});
+        const bucketNames = new Set();
+        for (const strategy of strategyList) {
+          Object.keys(report.retrieval?.[strategy]?.buckets || {}).forEach((b) => bucketNames.add(b));
+        }
+        for (const bucket of ["A_policy", "B_model", "C_colloquial", "E_multi"].filter((b) => bucketNames.has(b))) {
+          const cells = strategyList.map((strategy) => {
+            const stats = report.retrieval?.[strategy]?.buckets?.[bucket] || {};
+            return `<td class="num">${fmt(stats.mrr)}</td><td class="num">${fmt(stats.recall)}</td>`;
+          });
+          bucketRows.push(`<tr><td>${bucket}</td>${cells.join("")}</tr>`);
+        }
+        buckets.innerHTML = bucketRows.length
+          ? `<table class="buckets-table"><thead><tr><th>分桶</th>${strategyList.map((s) =>
+              `<th class="num" colspan="2">${STRATEGY_LABEL[s] || s}</th>`).join("")}</tr>
+              <tr><th></th>${strategyList.map(() => '<th class="num">MRR</th><th class="num">Recall</th>').join("")}</tr></thead>
+            <tbody>${bucketRows.join("")}</tbody></table>`
+          : "";
+      }
+
+      function renderRates(ledger) {
+        const box = document.querySelector("#faith-rates");
+        const counts = ledger.status_counts || {};
+        const judged = (report?.generation?.faithfulness) || {};
+        const totalJudged = Object.values(judged).reduce((sum, s) => sum + (s.judged || 0), 0);
+        const totalFabricated = Object.values(judged).reduce((sum, s) => sum + (s.fabricated || 0), 0);
+        const judgedRate = totalJudged ? totalFabricated / totalJudged : null;
+        const resolved = counts["已解决"] || 0;
+        const confirmedRate = totalFabricated ? resolved / Math.max(totalFabricated, resolved) : null;
+        box.innerHTML = `
+          <div class="rate-card"><div class="rate-label">本轮裁判判出率（编造个案 / 判总数）</div>
+            <div class="rate-value">${judgedRate === null ? "—" : `${fmt(judgedRate)} · ${totalFabricated}/${totalJudged}`}</div></div>
+          <div class="rate-card"><div class="rate-label">人工确认幻觉率（台账「已解决」/ 本轮判出）</div>
+            <div class="rate-value">${confirmedRate === null ? "—" : fmt(confirmedRate)}</div></div>
+          <div class="rate-card"><div class="rate-label">台账累计（未解决/已解决/无需解决）</div>
+            <div class="rate-value" style="font-size:15px">${counts["未解决"] ?? 0} / ${resolved} / ${counts["无需解决"] ?? 0}</div></div>`;
+      }
+
+      const STATUSES = ["未解决", "已解决", "无需解决", "全部"];
+
+      function renderTabs() {
+        const tabs = document.querySelector("#faith-tabs");
+        tabs.innerHTML = STATUSES.map((status) =>
+          `<button class="tab${status === currentStatus ? " active" : ""}" data-status="${status}">${status}</button>`
+        ).join("");
+        tabs.querySelectorAll(".tab").forEach((tab) => {
+          tab.addEventListener("click", () => {
+            currentStatus = tab.dataset.status;
+            page = 1;
+            renderTabs();
+            loadCases();
+          });
+        });
+      }
+
+      async function loadCases() {
+        const list = document.querySelector("#faith-list");
+        const status = currentStatus === "全部" ? null : currentStatus;
+        try {
+          const data = await api(`/api/rag-eval/faith-cases?${status ? `status=${encodeURIComponent(status)}&` : ""}page=${page}&page_size=${pageSize}`);
+          document.querySelector("#page-info").textContent = `第 ${data.page} 页 · 共 ${data.total} 条`;
+          document.querySelector("#prev-page").disabled = data.page <= 1;
+          document.querySelector("#next-page").disabled = data.page * data.page_size >= data.total;
+          if (!data.items.length) { list.innerHTML = '<div class="empty">这个页签下没有个案。</div>'; return; }
+          list.innerHTML = "";
+          for (const item of data.items) list.append(renderCase(item));
+        } catch (error) {
+          list.innerHTML = `<div class="empty">${error.message}</div>`;
+        }
+      }
+
+      function renderCase(item) {
+        const node = document.createElement("div");
+        node.className = "case";
+        node.innerHTML = `
+          <div class="case-head">
+            <span class="case-id">${item.eval_id}</span>
+            <span class="case-bucket">${item.bucket}</span>
+            <span class="case-strategy">${STRATEGY_LABEL[item.strategy] || item.strategy}</span>
+            <span class="spacer" style="flex:1"></span>
+            <span class="case-status status-${item.status}">${item.status}</span>
+          </div>
+          <p class="case-query">问：${item.query}</p>
+          <p class="case-reason">裁判理由：${item.reason}（判出 ${item.seen_count} 次${item.resolution ? ` · 处置：${item.resolution}` : ""}）</p>
+          <div class="case-detail">
+            <h4>本轮生成答案</h4>
+            <div class="answer-quote"></div>
+            <h4>当轮 Top-K 证据快照（高亮 = 被答案引用）</h4>
+            <div class="evi-list"></div>
+            <div class="case-actions">
+              <input type="text" maxlength="300" placeholder="处置说明（必填一句话）" aria-label="处置说明">
+              <button class="btn resolve" data-status="已解决">标记已解决</button>
+              <button class="btn resolve" data-status="无需解决">无需解决</button>
+            </div>
+          </div>`;
+        node.querySelector(".answer-quote").textContent = item.answer || "（无答案记录）";
+        const eviList = node.querySelector(".evi-list");
+        for (const citation of item.citations || []) {
+          const row = document.createElement("div");
+          row.className = "evi" + (citation.cited ? " cited" : "");
+          row.innerHTML = `<span class="evi-n">[${citation.n}]</span><span class="evi-path">${citation.section_path || ""}</span>` +
+            (citation.cited ? '<span class="cited-tag">被引用</span>' : "");
+          const text = document.createElement("p");
+          text.style.margin = "4px 0 0";
+          text.textContent = citation.answer || citation.question || "";
+          row.append(text);
+          eviList.append(row);
+        }
+        node.querySelector(".case-head").addEventListener("click", (event) => {
+          if (event.target.closest(".btn")) return;
+          node.classList.toggle("open");
+        });
+        node.querySelectorAll(".resolve").forEach((button) => {
+          button.addEventListener("click", async () => {
+            const input = node.querySelector("input");
+            const resolution = input.value.trim();
+            if (!resolution) { input.focus(); input.placeholder = "必填：请写一句处置说明"; return; }
+            button.disabled = true;
+            try {
+              await api(`/api/rag-eval/faith-cases/${encodeURIComponent(item.eval_id)}/resolve`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: button.dataset.status, resolution }),
+              });
+              await Promise.all([loadCases(), loadReport(false)]);
+            } catch (error) {
+              button.disabled = false;
+              alert(error.message);
+            }
+          });
+        });
+        return node;
+      }
+
+      async function loadReport(rerender = true) {
+        try {
+          report = await api("/api/rag-eval/report");
+          renderMeta(report.meta);
+          if (rerender) renderStrategies();
+        } catch (error) {
+          report = null;
+          renderMeta(null);
+          if (rerender) renderStrategies();
+        }
+        renderRates(await fetchLedgerCounts());
+      }
+
+      async function fetchLedgerCounts() {
+        try {
+          return await api("/api/rag-eval/faith-cases?page=1&page_size=1");
+        } catch (_) {
+          return { status_counts: {} };
+        }
+      }
+
+      const logBox = document.querySelector("#log-box");
+      const rerunBtn = document.querySelector("#rerun-btn");
+
+      function renderStatus(data) {
+        logBox.classList.add("show");
+        logBox.textContent = data.lines.join("\n") || "（等待输出…）";
+        logBox.scrollTop = logBox.scrollHeight;
+        rerunBtn.disabled = data.running;
+        if (!data.running) {
+          clearInterval(pollTimer);
+          pollTimer = null;
+          if (data.exit_code === 0) {
+            loadReport();
+          } else if (data.exit_code !== null) {
+            logBox.textContent += `\n\n（评估进程退出码 ${data.exit_code}，报告未更新时请查看上方日志）`;
+          }
+        }
+      }
+
+      rerunBtn.addEventListener("click", async () => {
+        rerunBtn.disabled = true;
+        try {
+          await api("/api/rag-eval/rerun", { method: "POST" });
+          if (!pollTimer) pollTimer = setInterval(async () => {
+            try { renderStatus(await api("/api/rag-eval/rerun/status")); } catch (_) {}
+          }, 1500);
+        } catch (error) {
+          alert(error.message);
+          rerunBtn.disabled = false;
+        }
+      });
+
+      document.querySelector("#refresh-btn").addEventListener("click", () => loadReport());
+      document.querySelector("#prev-page").addEventListener("click", () => { page = Math.max(1, page - 1); loadCases(); });
+      document.querySelector("#next-page").addEventListener("click", () => { page += 1; loadCases(); });
+
+      (async function init() {
+        renderTabs();
+        await loadReport();
+        await loadCases();
+        try {
+          const status = await api("/api/rag-eval/rerun/status");
+          if (status.running) {
+            renderStatus(status);
+            pollTimer = setInterval(async () => {
+              try { renderStatus(await api("/api/rag-eval/rerun/status")); } catch (_) {}
+            }, 1500);
+          } else if (status.lines.length) {
+            logBox.classList.add("show");
+            logBox.textContent = status.lines.slice(-30).join("\n");
+          }
+        } catch (_) {}
+      })();
+    })();
+  </script>
+</body>
+</html>

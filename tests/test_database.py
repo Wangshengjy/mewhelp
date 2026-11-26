@@ -21,7 +21,30 @@ def test_sqlite_application_factory_creates_exact_schema_and_constraints():
 
     with TestClient(app):
         inspector = inspect(app.state.engine)
-        assert set(inspector.get_table_names()) == {"faq", "conversations", "messages", "tickets"}
+        assert set(inspector.get_table_names()) == {
+            "faq",
+            "conversations",
+            "messages",
+            "tickets",
+            "knowledge_chunks",
+            "qa_extraction_staging",
+            "low_confidence_questions",
+            "faith_cases",
+            "conversation_summaries",
+            "tool_audit_logs",  # ch08 · 工具调用审计留痕
+            "review_queue",  # ch09 · 飞轮待审队列
+            "eval_runs",  # ch09 · 评估流水线轮次
+            "topic_classifications",  # ch10 · 微调分类器旁路归类结果
+        }
+        assert {column["name"] for column in inspector.get_columns("conversation_summaries")} == {
+            "id",
+            "conversation_id",
+            "seq",
+            "from_msg_id",
+            "upto_msg_id",
+            "content",
+            "created_at",
+        }
         assert {column["name"] for column in inspector.get_columns("faq")} == {
             "id",
             "question",
@@ -32,6 +55,9 @@ def test_sqlite_application_factory_creates_exact_schema_and_constraints():
             "id",
             "user_id",
             "status",
+            "summary",
+            "summary_upto_msg_id",
+            "layer1_from_msg_id",
             "created_at",
         }
         assert {column["name"] for column in inspector.get_columns("messages")} == {
@@ -57,6 +83,8 @@ def test_sqlite_application_factory_creates_exact_schema_and_constraints():
         assert inspector.get_pk_constraint("conversations")["constrained_columns"] == ["id"]
         assert inspector.get_pk_constraint("messages")["constrained_columns"] == ["id"]
         assert inspector.get_pk_constraint("tickets")["constrained_columns"] == ["ticket_no"]
+        assert inspector.get_pk_constraint("knowledge_chunks")["constrained_columns"] == ["id"]
+        assert inspector.get_pk_constraint("qa_extraction_staging")["constrained_columns"] == ["id"]
         assert {tuple(item["column_names"]) for item in inspector.get_unique_constraints("faq")} == {
             ("question", "category")
         }
@@ -65,6 +93,11 @@ def test_sqlite_application_factory_creates_exact_schema_and_constraints():
         }
         assert inspector.get_foreign_keys("messages")[0]["referred_table"] == "conversations"
         assert inspector.get_foreign_keys("tickets")[0]["referred_table"] == "conversations"
+        knowledge_chunk_fks = {
+            (tuple(item["constrained_columns"]), item["referred_table"]) for item in inspector.get_foreign_keys("knowledge_chunks")
+        }
+        assert (("prev_chunk_id",), "knowledge_chunks") in knowledge_chunk_fks
+        assert (("next_chunk_id",), "knowledge_chunks") in knowledge_chunk_fks
         assert app.state.settings.database_url.drivername == "mysql+pymysql"
 
 

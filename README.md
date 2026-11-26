@@ -128,8 +128,30 @@ data: [DONE]
 | `query_logistics` | 查询物流 | 返回承运商、运单号、当前状态与轨迹 |
 | `query_faq` | 查询 FAQ | 参数化 SQL `LIKE`，按关键词匹配问题/答案/分类 |
 | `create_ticket` | 创建人工工单 | 仅在用户明确要求转人工时调用；(会话, tool_call_id) 唯一，超时重试只建一张 |
+| `submit_refund` | 发起退款申请（ch06） | 拦截型：判定可退后转为前端「退款表单」提议，用户确认后走 `POST /api/actions/create-refund` 落库 |
 
 所有订单/商品/物流/工单均为虚构演示数据（响应带 `demo: true`）。FAQ 演示数据刻意只含"退货"与"服务"两条——"邮费是多少"必然查不到，用于验证客服在无命中时**如实说明而不是编造**（漏召回样例）。
+
+## 第六章：意图工程与人工接管（ch06）
+
+在 ch05 的 LangGraph 骨架上升级意图与退款链路：
+
+- **意图分类 v2（八类 + 置信度）**：`app/graph/intent.py` 以 Literal 八类硬约束（物流/订单/商品咨询/退款退货/售后/投诉/闲聊/其他）+ 自报置信度；多轮历史注入做指代消歧；异常/越界回退「其他」。模型可用 `INTENT_MODEL` 单独配置（temperature=0、不流式），与对话模型解耦。
+- **指代消解（coref）**：`app/graph/coref.py` 规则先行（已有订单号锚点/无指代词直接透传，省一次调用），其余单次 LLM 改写出 `resolved_query`，失败回退原句——意图与退款检索都吃改写后的问句。
+- **查询扩展**：`expand_queries` 把一条问句改写成 3 条检索友好查询，多路召回后按 `rerank_score` 去重合并。
+- **refund_flow 自动链**：`退款退货` 意图 → `fetch_order`（问句抽单号，缺单号则 `interrupt` 暂停图、前端渲染**订单卡片**供点选）→ `retrieve_policy`（多路检索退款政策出编号证据）→ 带证据 + 订单快照让 Agent 判定：可退走 `submit_refund`（拦截为退款表单提议），不可退引证据说明，证据不足建议转人工。
+- **人工接管闭环**：`POST /api/chat/stream` 新增 `interrupt` 帧（图暂停，本次流结束）；点选订单 → `POST /api/actions/resume`（SSE 续流，帧契约同 chat）；退款表单提交 → `POST /api/actions/create-refund`（reason 固定五类下拉，`tickets.ticket_type=退款`，列为 varchar(64) 无需迁移）。
+- **脚本出口**：闲聊/其他意图零模型调用走 `script_reply` 固定话术（取代 ch05 的 `chitchat_reply` 节点）。
+
+ch06 相关验证：
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q --basetemp="$env:TEMP\pytest-ch06"   # 265 个测试
+.\.venv\Scripts\python.exe -m scripts.eval_intent   # 八类标注 + 怪问题（真上游）
+.\.venv\Scripts\python.exe -m scripts.eval_coref    # 指代改写率（真上游）
+.\.venv\Scripts\python.exe -m scripts.eval_expand   # 查询扩展 3 条（真上游）
+.\.venv\Scripts\python.exe -m scripts.eval_ch06     # 四条验收直连图（真上游 + MySQL/Milvus）
+```
 
 ## 自动化验证
 

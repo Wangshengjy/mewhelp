@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MewHelp · ch09 审核后台</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; background: #f3f6fc; color: #24304d; }
+    header { padding: 18px 28px; background: #ffffff; border-bottom: 1px solid #e3e9f6; display: flex; align-items: center; gap: 16px; }
+    header h1 { margin: 0; font-size: 18px; }
+    header nav { display: flex; gap: 12px; font-size: 13px; }
+    header nav a { color: #5a6c96; text-decoration: none; }
+    header nav a:hover { color: #3c56c4; }
+    main { max-width: 1080px; margin: 24px auto; padding: 0 20px; display: grid; grid-template-columns: 340px 1fr; gap: 18px; align-items: start; }
+    @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+    .panel { background: #ffffff; border: 1px solid #e3e9f6; border-radius: 12px; overflow: hidden; }
+    .panel h2 { margin: 0; padding: 12px 16px; font-size: 14px; border-bottom: 1px solid #edf1fa; color: #40507a; }
+    .queue-item { padding: 12px 16px; border-bottom: 1px solid #f0f3fb; cursor: pointer; }
+    .queue-item:hover { background: #f6f8ff; }
+    .queue-item.active { background: #e9efff; }
+    .queue-item .q { font-size: 14px; font-weight: 600; }
+    .queue-item .meta { margin-top: 4px; font-size: 12px; color: #7787ab; display: flex; gap: 10px; }
+    .badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; }
+    .badge.待审 { background: #fff3d6; color: #9a6b00; }
+    .badge.通过 { background: #dcf5e3; color: #1d7a3c; }
+    .badge.驳回 { background: #fde3e3; color: #a33; }
+    .detail { padding: 16px; display: none; }
+    .detail.show { display: block; }
+    .field { margin-bottom: 14px; }
+    .field .label { font-size: 12px; color: #7787ab; margin-bottom: 4px; }
+    .field .value { font-size: 14px; line-height: 1.55; white-space: pre-wrap; }
+    .raw-item { border: 1px solid #e6ebf7; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; background: #fbfcff; }
+    .raw-item .src { font-size: 11px; color: #7787ab; margin-bottom: 4px; }
+    .snap { margin-top: 8px; border-top: 1px dashed #dbe3f5; padding-top: 8px; }
+    .snap .chunk { font-size: 12px; color: #4a5878; padding: 6px 8px; background: #f4f7ff; border-radius: 8px; margin-bottom: 6px; }
+    .snap .chunk .score { color: #3c56c4; font-weight: 600; }
+    textarea { width: 100%; min-height: 90px; border: 1px solid #d5dcf0; border-radius: 10px; padding: 10px; font: inherit; font-size: 14px; resize: vertical; }
+    .actions { display: flex; gap: 10px; margin-top: 12px; }
+    button.primary { background: #3c56c4; color: #fff; border: 0; border-radius: 10px; padding: 9px 18px; font-size: 14px; cursor: pointer; }
+    button.primary:hover { background: #3147a3; }
+    button.danger { background: #fff; color: #a33; border: 1px solid #e6b8b8; border-radius: 10px; padding: 9px 18px; font-size: 14px; cursor: pointer; }
+    button.danger:hover { background: #fdf2f2; }
+    button:disabled { opacity: .55; cursor: default; }
+    #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #2c3860; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13px; opacity: 0; transition: opacity .25s; pointer-events: none; }
+    #toast.show { opacity: 1; }
+    .empty { padding: 24px; text-align: center; color: #8b98ba; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>MewHelp · 飞轮审核后台</h1>
+    <nav>
+      <a href="/">对话页</a>
+      <a href="/kb">知识库</a>
+      <a href="/rag-eval">RAG 评估</a>
+      <a href="/observability">观测与成本</a>
+      <a href="/review">审核</a>
+    </nav>
+    <span id="langfuse-state" style="margin-left:auto;font-size:12px;color:#8b98ba;"></span>
+  </header>
+  <main>
+    <section class="panel">
+      <h2>待审队列 <span id="queue-count" style="color:#9aa6c6;font-weight:400;"></span></h2>
+      <div id="queue"></div>
+    </section>
+    <section class="panel">
+      <h2>审核详情</h2>
+      <div id="detail" class="detail show">
+        <div class="empty">从左侧选择一个知识缺口。详情含用户原话、落池来源与当时的召回片段快照。</div>
+      </div>
+      <div id="detail-body" class="detail"></div>
+    </section>
+  </main>
+  <div id="toast"></div>
+  <script>
+    const $queue = document.getElementById("queue");
+    const $detailBody = document.getElementById("detail-body");
+    const $detailEmpty = document.getElementById("detail");
+    let activeId = null;
+
+    function toast(text) {
+      const el = document.getElementById("toast");
+      el.textContent = text;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 2600);
+    }
+
+    async function loadQueue(status = "待审") {
+      const resp = await fetch(`/api/review/queue?status=${encodeURIComponent(status)}`);
+      const payload = await resp.json();
+      const items = payload.items || [];
+      document.getElementById("queue-count").textContent = `(${items.length})`;
+      $queue.replaceChildren();
+      if (!items.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "队列空 · 飞轮还没有新的知识缺口";
+        $queue.append(empty);
+        return;
+      }
+      for (const item of items) {
+        const row = document.createElement("div");
+        row.className = "queue-item" + (item.id === activeId ? " active" : "");
+        const q = document.createElement("div");
+        q.className = "q";
+        q.textContent = item.normalized_question;
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.innerHTML = `<span class="badge ${item.review_status}">${item.review_status}</span><span>出现 ${item.occurrence_count} 次</span>`;
+        row.append(q, meta);
+        row.addEventListener("click", () => loadDetail(item.id));
+        $queue.append(row);
+      }
+    }
+
+    async function loadDetail(id) {
+      activeId = id;
+      document.querySelectorAll(".queue-item").forEach((el) => el.classList.remove("active"));
+      const resp = await fetch(`/api/review/${id}`);
+      if (!resp.ok) { toast("详情加载失败"); return; }
+      const d = await resp.json();
+      $detailEmpty.style.display = "none";
+      $detailBody.classList.add("show");
+      const suggested = d.ai_suggested_answer ? `\n\n（模型备查答案：${d.ai_suggested_answer}）` : "";
+      $detailBody.innerHTML = `
+        <div class="field"><div class="label">标准化问题（出现 ${d.occurrence_count} 次 · <span class="badge ${d.review_status}">${d.review_status}</span>）</div>
+          <div class="value">${escapeHtml(d.normalized_question)}${escapeHtml(suggested)}</div></div>
+        <div class="field"><div class="label">归并的用户原话 + 当时的召回片段快照</div>
+          <div id="raws"></div></div>
+        <div class="field"><div class="label">核准答案（通过后写回知识库，可在此基础上修改）</div>
+          <textarea id="answer">${escapeHtml(d.approved_answer || d.ai_suggested_answer || "")}</textarea></div>
+        <div class="actions">
+          <button class="primary" id="approve" ${d.review_status !== "待审" ? "disabled" : ""}>通过并写回知识库</button>
+          <button class="danger" id="reject" ${d.review_status !== "待审" ? "disabled" : ""}>拒绝（留痕）</button>
+        </div>`;
+      const $raws = document.getElementById("raws");
+      if (!d.raw_questions.length) {
+        $raws.innerHTML = '<div class="raw-item">（该缺口还没有原话记录）</div>';
+      }
+      for (const raw of d.raw_questions) {
+        const box = document.createElement("div");
+        box.className = "raw-item";
+        const chunks = (raw.retrieved_chunks || []).map((c) =>
+          `<div class="chunk"><span class="score">${(c.rerank_score ?? 0).toFixed(2)}</span> · ${escapeHtml(c.question || "")} — ${escapeHtml(c.answer || "")} <em>(${escapeHtml(c.section_path || "")})</em></div>`
+        ).join("") || '<div class="chunk">（无召回快照 · 未走检索或无召回）</div>';
+        box.innerHTML = `
+          <div class="src">来源 ${raw.source} · ${raw.created_at || ""}</div>
+          <div class="value">${escapeHtml(raw.raw_question)}</div>
+          <div class="snap">${chunks}</div>
+          ${raw.reason ? `<div class="src" style="margin-top:6px;">落池原因：${escapeHtml(raw.reason)}</div>` : ""}`;
+        $raws.append(box);
+      }
+      document.getElementById("approve").addEventListener("click", () => act(id, "approve"));
+      document.getElementById("reject").addEventListener("click", () => act(id, "reject"));
+      document.querySelectorAll(".queue-item").forEach((el) => {
+        if (el.textContent.includes(d.normalized_question)) el.classList.add("active");
+      });
+    }
+
+    async function act(id, action) {
+      const answer = document.getElementById("answer").value.trim();
+      if (action === "approve" && !answer) { toast("核准答案不能为空"); return; }
+      const body = action === "approve"
+        ? { approved_answer: answer }
+        : { note: answer || "审核未通过" };
+      const resp = await fetch(`/api/review/${id}/${action}`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+      });
+      const payload = await resp.json().catch(() => ({}));
+      if (!resp.ok) { toast(payload.detail || "操作失败"); return; }
+      toast(action === "approve"
+        ? `已写回知识库：新增 ${payload.kb?.inserted ?? 0} 块，向量化 ${payload.kb?.vectorized ?? 0} 块`
+        : "已驳回留痕");
+      await loadQueue();
+      await loadDetail(id);
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? "").replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      }[ch]));
+    }
+
+    loadQueue();
+    fetch("/api/observability/overview").then((r) => r.json()).then((d) => {
+      document.getElementById("langfuse-state").textContent =
+        d.langfuse_enabled ? "Langfuse 已接入" : "Langfuse 未接入（降级运行）";
+    }).catch(() => {});
+  </script>
+</body>
+</html>

@@ -22,10 +22,9 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
-from app.database import build_engine, build_session_factory
 from app.prompts import CHAT_SYSTEM_PROMPT
 from app.settings import Settings
-from app.tools.registry import build_tool_registry
+from app.tools.registry import builtin_specs
 
 CASES_PATH = Path(__file__).with_name("tool_call_cases.jsonl")
 
@@ -44,9 +43,8 @@ def build_eval_model(settings: Settings, reasoning_effort: str | None) -> ChatOp
 
 
 def build_eval_registry() -> list[Any]:
-    """Build the approved tools against an unused offline session factory."""
-    session_factory = build_session_factory(build_engine("sqlite+pysqlite:///:memory:"))
-    return list(build_tool_registry(session_factory).values())
+    """内置工具(启动登记的 ToolSpec 清单);离线评估不依赖 MCP Server 在线。"""
+    return [spec.tool for spec in builtin_specs()]
 
 
 def arguments_match(expected: Mapping[str, Any], actual: Mapping[str, Any]) -> bool:

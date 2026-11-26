@@ -1,0 +1,72 @@
+[
+  {
+    "raw": "猫窝能放洗衣机里洗吗",
+    "normalized": "猫窝可以放在洗衣机里清洗吗?",
+    "matched_id": null,
+    "suggested": "不建议将猫窝放入洗衣机清洗，容易损坏。",
+    "candidates_seen": 0
+  },
+  {
+    "raw": "猫咪疫苗每年都要打不",
+    "normalized": "猫咪疫苗需要每年接种吗?",
+    "matched_id": null,
+    "suggested": "是的，猫咪疫苗通常建议每年接种一次以保持免疫效果。",
+    "candidates_seen": 0
+  },
+  {
+    "raw": "你们家猫粮啥时候发货啊",
+    "normalized": "猫粮何时发货?",
+    "matched_id": null,
+    "suggested": "工作日下单后3-5天内发货。",
+    "candidates_seen": 0
+  },
+  {
+    "raw": "运费险这个东西到底咋用",
+    "normalized": "如何使用运费险?",
+    "matched_id": null,
+    "suggested": "购买商品后如需退货,可申请使用运费险报销退货邮费。",
+    "candidates_seen": 0
+  },
+  {
+    "raw": "cat litter box 可以水洗吗",
+    "normalized": "cat litter box可以水洗吗?",
+    "matched_id": null,
+    "suggested": "可以清洗，但请先去除固体废物，然后用温和的清洁剂清洗。",
+    "candidates_seen": 0
+  },
+  {
+    "raw": "退货运费到底谁出啊",
+    "normalized": "退货运费由谁承担?",
+    "matched_id": null,
+    "suggested": "根据我们的政策，退货运费需由客户承担。",
+    "candidates_seen": 0
+  },
+  {
+    "raw": "怎样才算不影响二次销售呢",
+    "normalized": "怎样才算不影响二次销售?",
+    "matched_id": null,
+    "suggested": "商品保持原貌，包装完整，附件齐全。",
+    "candidates_seen": 0
+  },
+  {
+    "raw": "发货后多久能到货",
+    "normalized": "发货后多久能到货?",
+    "matched_id": null,
+    "suggested": "一般3-7个工作日内到达,具体时间请查看物流信息。",
+    "candidates_seen": 0
+  },
+  {
+    "raw": "pet bed 洗了会不会缩水",
+    "normalized": "pet bed 洗了会缩水吗?",
+    "matched_id": null,
+    "suggested": "pet bed 通常不会缩水，但建议按照洗涤说明清洗。",
+    "candidates_seen": 0
+  },
+  {
+    "raw": "疫苗第二针和第一针间隔多久",
+    "normalized": "疫苗第二针和第一针间隔多久?",
+    "matched_id": null,
+    "suggested": "一般建议间隔28至84天,具体请遵循医嘱。",
+    "candidates_seen": 0
+  }
+]

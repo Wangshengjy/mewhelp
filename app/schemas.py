@@ -50,3 +50,72 @@ class AfterSalesExtraction(BaseModel):
             "“最好退回原支付方式”概括为“退回原支付方式”；未提出时为 null"
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# ch03 · /kb 知识库页面请求模型
+# ---------------------------------------------------------------------------
+
+
+class KbPreviewRequest(BaseModel):
+    """对粘贴的 Markdown 正文就地切块预览（只切不写）。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    content: str = Field(min_length=1, description="粘贴的 Markdown 正文")
+    content_type: Literal["faq", "policy", "manual"] = Field(default="policy", description="内容类型")
+
+
+class KbEntryRequest(BaseModel):
+    """手工录入：切块 + 指纹查重 + 入库，可选顺手向量化。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    content: str = Field(min_length=1, description="Markdown 正文（需要标题 + 正文结构）")
+    content_type: Literal["faq", "policy", "manual"] = Field(default="policy", description="内容类型")
+    vectorize: bool = Field(default=False, description="入库后是否立即向量化写入 Milvus")
+
+
+class KbSearchRequest(BaseModel):
+    """检索自测；ch04 起支持四策略，mode=dense 保留为 ch03 兼容入口。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    query: str = Field(min_length=1, description="检索问题")
+    top_k: int = Field(default=5, ge=1, le=20, description="召回条数")
+    mode: Literal["dense", "vector", "bm25", "hybrid", "hybrid_rerank"] = Field(
+        default="dense", description="检索模式：dense=ch03 密集单路；其余为 ch04 四策略"
+    )
+
+    @field_validator("query")
+    @classmethod
+    def query_must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("query must not be blank")
+        return value.strip()
+
+
+class KbStagingActionRequest(BaseModel):
+    """暂存行审核动作（approve=采纳入库 / reject=弃用留痕）。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: int = Field(ge=1, description="qa_extraction_staging 行 ID")
+
+
+class FeedbackRequest(BaseModel):
+    """ch09 · 用户反馈入口（👍/👎）：rating 落 low_confidence_questions（source=user_feedback）。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    conversation_id: str = Field(min_length=1, description="会话 UUID（关卡点对账）")
+    turn_index: int = Field(ge=1, description="第几轮问答（1 起，checkpoint 里数 HumanMessage）")
+    rating: Literal["up", "down"]
+    comment: str = Field(default="", max_length=2000, description="可选补充说明")
+
+    @field_validator("conversation_id")
+    @classmethod
+    def conversation_id_must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("conversation_id must not be blank")
+        return value.strip()

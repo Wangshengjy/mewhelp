@@ -1,0 +1,6 @@
+ch09 · Cost Control · 按意图 token 账
+来源: http://localhost:3000 | traces=2
+总计: 980327 tokens (in 417777 / out 21558)
+
+意图              traces     input    output     total
+商品咨询                 2    417777     21558    980327
